@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Projection</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon/dist/chartjs-adapter-luxon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-trendline/dist/chartjs-plugin-trendline.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+
+    <style>
+        body {
+            background-color: #121212; /* Very dark background for the whole page */
+            color: #e0e0e0; /* Light text color for general page content */
+            font-family: Arial, sans-serif;
+            margin: 0; /* Remove default body margin */
+            display: flex; /* Use flexbox to easily center content */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            flex-direction: column; 
+        }
+
+        .chart-container {
+            --point-size: 2;
+            position: relative;
+            /* --- Responsive Sizing --- */
+            width: 90vw; /* Take up 90% of viewport width */
+        
+            flex: 1; 
+            min-height: 300px; /* Ensure a minimum height for readability on larger screens */
+            max-height: 80vh; /* Optional: Sets a reasonable upper limit for very large monitors */
+            /* --- End Responsive Sizing --- */
+
+            margin: 20px auto 10px auto; /* Reduced bottom margin to bring the info panel closer */
+            background-color: #1e1e1e; /* Dark background for the chart area */
+            border-radius: 8px; /* Slightly rounded corners */
+            padding: 15px; /* Padding inside the container */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+        }
+
+        .info-panel {
+            width: 90vw;
+            /* max-width: 900px; /* Keep it consistent with chart width */
+            margin-top: 10px; /* Reduced top margin */
+            margin-bottom: 20px;
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .info-panel p {
+            margin: 5px 0;
+            font-size: 1.1em;
+        }
+        /* --- END NEW --- */
+
+        /* --- Media Queries for Smaller Screens --- */
+
+        /* For tablets and larger phones (e.g., up to 768px wide) */
+        @media (max-width: 768px) {
+            .chart-container {
+                --point-size: 0.5;
+                width: 95vw; /* Take up more width on these screens */
+            /* MODIFIED: Keep flex properties, just adjust min-height */
+                min-height: 280px; /* Adjust minimum height */
+                margin: 10px auto 5px auto;
+                padding: 12px;
+            }
+            .info-panel {
+                width: 95vw;
+                margin-top: 5px;
+                margin-bottom: 10px;
+                padding: 12px;
+            }
+        }
+
+        /* For typical phone screens (e.g., up to 480px wide) */
+        @media (max-width: 480px) {
+            .chart-container,
+            .info-panel {
+                /* NEW: Include padding within the width */
+                box-sizing: border-box;
+            }
+
+            .chart-container {
+                --point-size: 0.3;
+                width: 98vw;
+                height: 85vw;
+                flex: none;
+                min-height: auto;
+                padding: 10px;
+                margin: 5px auto;
+            }
+            .info-panel {
+                width: 98vw;
+                margin: 5px auto;
+                padding: 10px;
+            }
+            .info-panel p {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="info-panel" class="info-panel">
+        <p>Loading financial data and projections...</p>
+    </div>
+    <div class="chart-container">
+        <canvas id="myFinancialChart"></canvas>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/balancemonitors/analytics') // Your PHP script endpoint
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        console.error("Error from backend:", data.error);
+                        document.getElementById('info-panel').innerHTML = `<p style="color: red;">Error loading financial data: ${data.error}</p>`;
+                        return;
+                    }
+                    
+                    console.log("data:", data);
+                    
+                    const pointSize = getComputedStyle(document.querySelector('.chart-container')).getPropertyValue('--point-size');
+                    console.log("pointsize:", pointSize);
+
+                    const startDate = new Date(data.startTimeUnix * 1000); // Convert Unix timestamp to Date object
+                    console.log("startDate:", startDate);
+
+                    const formatDataForChart = (arr) => {
+                        return arr.map(point => ({
+                            x: new Date(startDate.getTime() + point[0] * 24 * 60 * 60 * 1000), // Convert days back to Date objects
+                            y: point[1]
+                        }));
+                    };
+
+                    const historicalChartData = formatDataForChart(data.historicalData);
+                    const trendlineChartData = formatDataForChart(data.trendline);
+                    const lowerPIChartData = formatDataForChart(data.lowerPredictionInterval);
+                    const upperPIChartData = formatDataForChart(data.upperPredictionInterval);
+
+                    // --- Calculate X-axis bounds (remain the same) ---
+                    const minXDate = historicalChartData[0].x;
+
+                    let maxXDate = trendlineChartData[trendlineChartData.length - 1].x;
+                    //if (data.latest_run_out_date_x && data.latest_run_out_date_x !== Infinity) {
+                        //const latestRunOutDateFromData = new Date(startDate.getTime() + data.latest_run_out_date_x * 24 * 60 * 60 * 1000);
+                        //if (latestRunOutDateFromData > maxXDate) {
+                            //maxXDate = latestRunOutDateFromData;
+                        //}
+                    //}
+                    const totalRangeMs = maxXDate.getTime() - minXDate.getTime();
+                    const bufferMs = totalRangeMs * 0.05;
+                    maxXDate = new Date(maxXDate.getTime() + bufferMs);
+                    
+                    const maxAmount = historicalChartData[0].y;
+                    let minAmount = historicalChartData[historicalChartData.length - 1].y;
+                    const buffferAmount = (maxAmount-minAmount) * 0.1;
+                    minAmount = Math.floor((minAmount-buffferAmount)/1000) * 1000;
+
+
+                    // --- Annotations Data Removed (No longer used for charting) ---
+                    // The logic to calculate originalRunOutDate, earliestRunOutDate, latestRunOutDate
+                    // is still needed for the text display below the chart.
+                    let originalRunOutDate = null;
+                    let earliestRunOutDate = null;
+                    let latestRunOutDate = null;
+
+                    if (data.originalXIntercept && data.originalXIntercept !== Infinity) {
+                        originalRunOutDate = new Date(startDate.getTime() + data.originalXIntercept * 24 * 60 * 60 * 1000);
+                    }
+
+                    if (data.earliestRunOutDateX && data.earliestRunOutDateX !== Infinity) {
+                        earliestRunOutDate = new Date(startDate.getTime() + data.earliestRunOutDateX * 24 * 60 * 60 * 1000);
+                    }
+
+                    if (data.latestRunOutDateX && data.latestRunOutDateX !== Infinity) {
+                        latestRunOutDate = new Date(startDate.getTime() + data.latestRunOutDateX * 24 * 60 * 60 * 1000);
+                    }
+                    
+                    const originalDateDisplay = originalRunOutDate ? originalRunOutDate.toLocaleDateString() : 'N/A';
+                    const earliestDateDisplay = earliestRunOutDate ? earliestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
+                    const latestDateDisplay = latestRunOutDate && latestRunOutDate !== Infinity ? latestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
+                    const confidence = data.confidence*100;
+
+                    let trendlineinformation = [];
+                    //trendlineinformation.push(`R-squared: ${data.r_squared ? data.r_squared.toFixed(4) : 'N/A'}`);
+                    //trendlineinformation.push(`Standard Error of Regression: $${data.ser ? data.ser.toFixed(2) : 'N/A'}`);
+                    //trendlineinformation.push(`Original Trendline Run-out Date: ${originalDateDisplay}`);
+                    trendlineinformation.push(`Money estimated to last until:`);
+                    trendlineinformation.push(`Earliest Date: ${earliestDateDisplay}`);
+                    trendlineinformation.push(`Latest Date: ${latestDateDisplay}`);
+                    const infoPanel = document.getElementById('info-panel');
+                    infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
+
+                    // Initialize Chart.js
+                    const ctx = document.getElementById('myFinancialChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            datasets: [
+                                {
+                                    label: 'Historical Balance',
+                                    data: historicalChartData,
+                                    backgroundColor: 'rgba(75, 192, 192, 0.6)', // Slightly more opaque for dark theme
+                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    type: 'scatter',
+                                    showLine: false,
+                                    pointRadius: pointSize
+                                },
+                                {
+                                    label: 'Trendline',
+                                    data: trendlineChartData,
+                                    borderColor: 'red',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    fill: false,
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: 'Prediction Interval (Lower)',
+                                    data: lowerPIChartData,
+                                    borderColor: 'rgba(0, 200, 0, 0.5)',
+                                    borderWidth: 1,
+                                    fill: '-1',
+                                    backgroundColor: 'rgba(0, 200, 0, 0.1)',
+                                    pointRadius: 0
+                                },
+                                {
+                                    label: 'Prediction Interval (Upper)',
+                                    data: upperPIChartData,
+                                    borderColor: 'rgba(0, 200, 0, 0.5)',
+                                    borderWidth: 1,
+                                    fill: false,
+                                    pointRadius: 0
+                                }
+                            ]
+                        },
+                        options: {
+                            maintainAspectRatio: false,
+                            scales: {
+                                x: {
+                                    type: 'time',
+                                    time: {
+                                        unit: 'day',
+                                        tooltipFormat: 'MMM D, YYYY'
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'Date'
+                                    },
+                                    min: minXDate,
+                                    max: latestRunOutDate
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Money Balance ($)'
+                                    },
+                                    min: 0 //minAmount // Adjust as needed
+                                }
+                            },
+                            plugins: {
+                                tooltip: {
+                                    callbacks: {
+                                        title: function(context) {
+                                            return new Date(context[0].parsed.x).toLocaleDateString();
+                                        },
+                                        label: function(context) {
+                                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                        }
+                                    }
+                                },
+                                annotation: {
+                                    // The annotation configuration is completely removed here.
+                                        }
+                            }
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    document.getElementById('info-panel').innerHTML = `<p style="color: red;">Could not load chart data. Check the server console.</p>`;
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+/* --- Global Variables --- */
+:root {
+    --background-color: #1a1a1a;
+    --text-color: #e0e0e0;
+    --primary-color: #5b9b5e; /* Green for primary elements */
+    --primary-hover-color: #4c8250; /* A slightly darker green on hover */
+    --secondary-text-color: #b0b0b0;
+    --border-color: #444444;
+    --fieldset-border-color: #666666;
+    --status-ok-color: #76ff03; /* Brighter green for OK status */
+    --status-red-color: #ff5252;
+    --status-orange-color: #ffc107; /* Brighter orange for warning */
+    --status-blue-color: #5b9b5e; /* Green for allowances now */
+}
+
+/* --- Common Body and Headings --- */
+body {
+    width: 98%;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    font-family: Arial, sans-serif;
+}
+
+h1 {
+    font-size: 2em;
+    color: var(--primary-color);
+}
+
+h2 {
+    font-size: 1.5em;
+    margin-top: 0.1em;
+    margin-bottom: 0.1em;
+    color: var(--secondary-text-color);
+}
+
+h3 {
+    font-size: 1em;
+    margin-top: 1em;
+    margin-bottom: 0.1em;
+    color: var(--secondary-text-color);
+}
+
+/* --- Bill List View Specific Styles --- */
+fieldset.double {
+    border-width: 0.5em;
+    border-style: double;
+    border-color: var(--fieldset-border-color);
+    margin-top: 1em;
+    width: 50%;
+    padding: 1em;
+}
+
+legend {
+    font-size: 1.5em;
+    margin-bottom: 0.5em;
+    color: var(--primary-color);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+col {
+    width: 80px;
+}
+
+td.padding {
+    padding: 0.5em;
+}
+
+td.statusRow {
+    font-size: 1.5em;
+}
+
+td.edit-button-cell {
+    padding-left: 3.5em;
+    padding-right: 0.5em;
+    text-align: right;
+}
+
+/* Fix for the edit button vertical alignment */
+.edit-bill-button {
+    margin-top: 0;
+}
+
+input[type=checkbox] {
+    transform: scale(4);
+    -webkit-transform: scale(4);
+    margin: 25px;
+    accent-color: var(--primary-color);
+}
+
+.link-button {
+    display: inline-block;
+    width: 100%;
+    font-size: 1.7em;
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    border: none;
+    padding: 0.5em;
+    cursor: pointer;
+    border-radius: 0.5em;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    text-decoration: none;
+}
+
+    .link-button:hover {
+        background-color: var(--primary-hover-color);
+    }
+
+/* --- Edit Form View Specific Styles --- */
+input[type=text] {
+    width: 100%;
+    padding: 0.5em;
+    font-size: 1.5em;
+    background-color: #2a2a2a;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5em;
+    box-sizing: border-box;
+}
+
+.title-orange {
+    color: var(--status-orange-color);
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1em;
+}
+
+    .input-row h2 {
+        flex-basis: 15%;
+        margin: 0;
+        text-align: left;
+    }
+
+    .input-row .input-container {
+        flex-grow: 1;
+    }
+
+        .input-row .input-container input {
+            width: 100%;
+        }
+
+.form-container {
+    width: 50%;
+}
+
+/* --- Shared Button & Status Styles --- */
+button {
+    width: 100%;
+    font-size: 1.7em;
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    border: none;
+    padding: 0.5em;
+    cursor: pointer;
+    border-radius: 0.5em;
+    transition: background-color 0.3s ease;
+    margin-top: 1.5em;
+}
+
+    button:hover {
+        background-color: var(--primary-hover-color);
+    }
+
+span.status {
+    font-size: 1em;
+    text-transform: uppercase;
+    color: var(--status-ok-color);
+}
+
+    span.status.success, .color-ok {
+        color: var(--status-ok-color);
+    }
+
+    span.status.error, .color-red {
+        color: var(--status-red-color);
+    }
+
+.color-orange {
+    color: var(--status-orange-color);
+}
+
+.color-blue {
+    color: var(--status-blue-color);
+}
+
+.color-gray {
+    color: var(--fieldset-border-color);
+}
+
+#balance, #updated {
+    color: var(--status-ok-color);
+}
+
+#billtotal, #weekly {
+    color: var(--status-orange-color);
+}
+
+#remain, #daily, #actual-income, #expected-income {
+    color: var(--status-blue-color);
+}
+
+#titleremain {
+    color: var(--secondary-text-color);
+}
+
+
+/* --- Responsive Styles for Mobile (< 1000px) --- */
+@media (max-width: 1000px) {
+    body {
+        width: 98%;
+    }
+
+    td.edit-button-cell {
+        padding-left: 4.5em;
+        padding-right: 0.5em;
+        text-align: right;
+    }
+
+    h1 {
+        font-size: 3.5em;
+    }
+
+    h2 {
+        font-size: 3em;
+        margin-top: 0.3em;
+        margin-bottom: 0.3em;
+    }
+
+    h3 {
+        font-size: 2.5em;
+        margin-top: 1em;
+        margin-bottom: 0.3em;
+    }
+
+    legend {
+        font-size: 2.5em;
+        margin-bottom: 1em;
+    }
+
+    button, .link-button {
+        width: 100%;
+        font-size: 3em;
+        padding: 0.6em;
+    }
+
+    span.status {
+        font-size: 2em;
+    }
+
+    /* Bill List view specifics */
+    fieldset.double {
+        border-width: 1em;
+        margin-top: 3em;
+        width: 100%;
+        padding: 1em;
+    }
+
+    td.padding {
+        padding: 1em;
+    }
+
+    td.statusRow {
+        font-size: 2.8em;
+    }
+
+    span.status {
+        font-size: 1em;
+    }
+
+    input[type=checkbox] {
+        transform: scale(7);
+        -webkit-transform: scale(7);
+        margin: 50px;
+    }
+
+    col {
+        width: 150px;
+    }
+
+    /* Edit Form view specifics */
+    input[type=text] {
+        font-size: 3em;
+        padding: 0.5em;
+    }
+
+    .input-row h2 {
+        flex-basis: 33%;
+    }
+
+    .form-container {
+        width: 100%;
+    }
+}

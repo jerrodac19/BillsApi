@@ -1,0 +1,17 @@
+# Sensitive configuration files
+appsettings.json
+appsettings.*.json
+!appsettings.template.json
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio folders
+.vs/
