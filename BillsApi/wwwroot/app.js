@@ -29,16 +29,9 @@ async function renderBillList() {
 
         // Update the state with the combined data from the DashboardController
         state.accountInfo = dashboardData.latestBalance;
-        // Assuming your bills data is still on a separate endpoint and we need to fetch it separately
-        const billsResponse = await fetch('/api/bills');
-        state.bills = await billsResponse.json();
-
-        // The new dashboard endpoint provides this data
+        state.bills = dashboardData.bills;
         state.actualTransactions = dashboardData.monthlyIncome;
-
-        // This data still needs to be fetched from its original endpoint as it's not in the dashboard DTO
-        const expectedIncomeResponse = await fetch('/api/income');
-        state.expectedIncome = await expectedIncomeResponse.json();
+        state.expectedIncome = dashboardData.expectedIncome;
 
         // calculate the bill total
         const totalDue = state.bills.reduce((sum, bill) => sum + bill.amount, 0);
