@@ -1,8 +1,6 @@
 ﻿using BillsApi.Models;
-using BillsApi.Services;
-using Microsoft.AspNetCore.Http;
+using BillsApi.Repositories.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BillsApi.Controllers
 {
@@ -10,26 +8,24 @@ namespace BillsApi.Controllers
     [ApiController]
     public class IncomeController : ControllerBase
     {
-        private readonly BillsApiContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public IncomeController(BillsApiContext context)
+        public IncomeController(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Income>>> GetIncome([FromQuery] int groupId = 1)
         {
-            if (_context.Incomes == null)
+            var incomes = await _unitOfWork.Incomes.GetIncomesByGroupIdAsync(groupId);
+
+            if (incomes == null || !incomes.Any())
             {
                 return NotFound();
             }
 
-            var query = _context.Incomes.Include(i => i.User).AsQueryable();
-
-            query = query.Where(i => i.User.GroupId == groupId);
-
-            return await query.ToListAsync();
+            return Ok(incomes);
         }
     }
 }

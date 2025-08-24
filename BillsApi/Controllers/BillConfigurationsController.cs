@@ -1,7 +1,6 @@
 ﻿using BillsApi.Models;
-using Microsoft.AspNetCore.Http;
+using BillsApi.Repositories.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BillsApi.Controllers
 {
@@ -9,17 +8,17 @@ namespace BillsApi.Controllers
     [ApiController]
     public class BillConfigurationsController : ControllerBase
     {
-        private readonly BillsApiContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public BillConfigurationsController(BillsApiContext context)
+        public BillConfigurationsController(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<BillConfiguration>>> GetBillConfigurations()
         {
-            var configurations = await _context.BillConfigurations.ToListAsync();
+            var configurations = await _unitOfWork.BillConfigurations.GetAllAsync();
 
             return Ok(configurations);
         }

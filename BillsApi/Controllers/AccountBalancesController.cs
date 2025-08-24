@@ -1,7 +1,7 @@
 ﻿using BillsApi.Dtos;
 using BillsApi.Models;
+using BillsApi.Repositories.UnitOfWork;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace BillsApi.Controllers
 {
@@ -9,25 +9,17 @@ namespace BillsApi.Controllers
     [ApiController]
     public class AccountBalancesController : ControllerBase
     {
-        private readonly BillsApiContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public AccountBalancesController(BillsApiContext context)
+        public AccountBalancesController(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
         [HttpGet("latest")]
         public async Task<ActionResult<IEnumerable<AccountBalance>>> GetLatestAccountBalance()
         {
-            if (_context.AccountBalances == null)
-            {
-                return NotFound();
-            }
-
-            // Find the latest entry by ordering in descending order by Date
-            var latestBalance = await _context.AccountBalances
-                .OrderByDescending(ab => ab.Id)
-                .FirstOrDefaultAsync();
+            var latestBalance = await _unitOfWork.AccountBalances.GetLatestBalanceAsync();
 
             if (latestBalance == null)
             {
@@ -40,11 +32,6 @@ namespace BillsApi.Controllers
         [HttpPost]
         public async Task<ActionResult<AccountBalance>> UpdateBalance([FromBody] CreateAccountBalanceDto createAccountBalanceDto)
         {
-            if (_context.AccountBalances == null)
-            {
-                return NotFound();
-            }
-
             var accountBalance = new AccountBalance
             {
                 Amount = createAccountBalanceDto.Amount,
@@ -52,17 +39,12 @@ namespace BillsApi.Controllers
                 GroupId = createAccountBalanceDto.GroupId
             };
 
-            _context.AccountBalances.Add(accountBalance);
-            await _context.SaveChangesAsync();
+            await _unitOfWork.AccountBalances.AddAsync(accountBalance);
+            await _unitOfWork.SaveAsync();
 
-            // Return a 201 Created status code with the newly created AccountBalance
             return CreatedAtAction(nameof(GetLatestAccountBalance), new { id = accountBalance.Id }, accountBalance);
         }
 
-        /// <summary>
-        /// Gets the last N balances from the database.
-        /// </summary>
-        /// <param name="n">The number of balances to return (e.g., 10). Defaults to 10 if not provided.</param>
         [HttpGet]
         public async Task<ActionResult<IEnumerable<AccountBalance>>> GetLastNBalances([FromQuery] int n = 1)
         {
@@ -71,11 +53,7 @@ namespace BillsApi.Controllers
                 return BadRequest("The number of transactions must be a positive integer.");
             }
 
-            // Order by date descending and take the top N records
-            var balances = await _context.AccountBalances
-                .OrderByDescending(ab => ab.Id)
-                .Take(n)
-                .ToListAsync();
+            var balances = await _unitOfWork.AccountBalances.GetLastNBalancesAsync(n);
 
             return Ok(balances);
         }
