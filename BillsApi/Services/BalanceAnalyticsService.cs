@@ -64,6 +64,7 @@
                 estimated_max_project_x = x_vals.Max() + 100;
             }
 
+            // For plotting, use a reduced number of points for performance
             const int numPlotPoints = 50;
             var plot_x_vals = Enumerable.Range(0, numPlotPoints)
                 .Select(i => start_x_for_plot + i * (estimated_max_project_x - start_x_for_plot) / (numPlotPoints - 1))
@@ -102,36 +103,48 @@
                 }
             }
 
-            // --- NEW: Calculate run-out dates by solving the quadratic equation ---
+            // --- REVERTED LOGIC: Use a dense iterative search for run-out dates ---
             double earliest_run_out = double.PositiveInfinity;
             double latest_run_out = double.PositiveInfinity;
+            double max_x_val = x_vals.Max();
 
-            if (slope < 0 && critical_t > 0 && sum_sq_x_minus_mean > 0)
+            // Use a higher density of points for accurate calculation
+            const int numCalculationPoints = 1000;
+            var calc_x_vals = Enumerable.Range(0, numCalculationPoints)
+                .Select(i => max_x_val + i * (estimated_max_project_x - max_x_val) / (numCalculationPoints - 1))
+                .ToArray();
+
+            // Find earliest run-out date from the lower prediction interval
+            foreach (var x_new in calc_x_vals)
             {
-                // Coefficients for the quadratic equation: Ax^2 + Bx + C = 0
-                // For the lower PI (earliest run-out)
-                double a_lower = slope * slope - critical_t * critical_t * ser * ser / sum_sq_x_minus_mean;
-                double b_lower = 2 * slope * (intercept - slope * x_mean) + 2 * critical_t * critical_t * ser * ser * x_mean / sum_sq_x_minus_mean;
-                double c_lower = (intercept - slope * x_mean) * (intercept - slope * x_mean) - critical_t * critical_t * ser * ser * (1 + 1.0 / n + x_mean * x_mean / sum_sq_x_minus_mean);
+                double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
+                double y_pred_single = slope * x_new + intercept;
+                double lower_pi = y_pred_single - critical_t * se_pred_single;
 
-                double discriminant_lower = b_lower * b_lower - 4 * a_lower * c_lower;
-
-                if (discriminant_lower >= 0)
+                if (lower_pi <= 0)
                 {
-                    earliest_run_out = (-b_lower + Math.Sqrt(discriminant_lower)) / (2 * a_lower);
+                    earliest_run_out = x_new;
+                    break;
                 }
+            }
 
-                // For the upper PI (latest run-out)
-                double a_upper = slope * slope - critical_t * critical_t * ser * ser / sum_sq_x_minus_mean;
-                double b_upper = 2 * slope * (intercept - slope * x_mean) + 2 * critical_t * critical_t * ser * ser * x_mean / sum_sq_x_minus_mean;
-                double c_upper = (intercept - slope * x_mean) * (intercept - slope * x_mean) - critical_t * critical_t * ser * ser * (1 + 1.0 / n + x_mean * x_mean / sum_sq_x_minus_mean);
+            // Find latest run-out date from the upper prediction interval
+            foreach (var x_new in calc_x_vals)
+            {
+                double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
+                double y_pred_single = slope * x_new + intercept;
+                double upper_pi = y_pred_single + critical_t * se_pred_single;
 
-                double discriminant_upper = b_upper * b_upper - 4 * a_upper * c_upper;
-
-                if (discriminant_upper >= 0)
+                if (upper_pi <= 0)
                 {
-                    latest_run_out = (-b_upper - Math.Sqrt(discriminant_upper)) / (2 * a_upper);
+                    latest_run_out = x_new;
+                    break;
                 }
+            }
+            // Ensure earliest is indeed earlier than latest
+            if (earliest_run_out > latest_run_out && latest_run_out != double.PositiveInfinity)
+            {
+                (earliest_run_out, latest_run_out) = (latest_run_out, earliest_run_out);
             }
 
             return new BalanceAnalyticsResult
