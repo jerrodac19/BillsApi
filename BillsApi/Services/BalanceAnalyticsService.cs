@@ -14,7 +14,6 @@
     {
         public BalanceAnalyticsResult Analyze(IEnumerable<BalanceMonitor> data)
         {
-            // Get the Unix timestamp from the first data point
             var firstUpdate = data.First().Updated;
             long startTimeUnix = 0;
             if (firstUpdate != null)
@@ -34,20 +33,16 @@
             var x_vals = dataPoints.Select(dp => ((DateTime)(dp.Updated!.Value) - (DateTime)firstUpdate).TotalDays).ToArray();
             var y_vals = dataPoints.Select(dp => (double)dp.Amount!).ToArray();
 
-            // Correct way to perform linear regression. Fit() is a static method
             var (intercept, slope) = SimpleRegression.Fit(x_vals, y_vals);
 
-            // Calculate predicted values for the historical data points
             var y_predicted_historical = x_vals.Select(x => slope * x + intercept).ToArray();
 
-            // Correct way to get R-squared
             double rSquared = GoodnessOfFit.RSquared(y_vals, y_predicted_historical);
 
             double confidenceLevel = 0.99;
             int n = x_vals.Length;
             int df_residuals = n - 2;
 
-            // Calculate Mean Square Error manually or from residuals
             double sumOfSquaredResiduals = y_vals.Zip(y_predicted_historical, (actual, predicted) => Math.Pow(actual - predicted, 2)).Sum();
             double mse = sumOfSquaredResiduals / df_residuals;
             double ser = Math.Sqrt(mse);
@@ -69,11 +64,18 @@
                 estimated_max_project_x = x_vals.Max() + 100;
             }
 
-            var all_x_for_plot = Enumerable.Range(0, 1000)
-                .Select(i => start_x_for_plot + i * (estimated_max_project_x - start_x_for_plot) / 999.0)
+            // Generate a reduced number of points for the plots (e.g., 50)
+            const int numPlotPoints = 50;
+            var all_x_for_plot = Enumerable.Range(0, numPlotPoints)
+                .Select(i => start_x_for_plot + i * (estimated_max_project_x - start_x_for_plot) / (numPlotPoints - 1))
                 .ToArray();
 
-            var y_predicted_all = all_x_for_plot.Select(x => slope * x + intercept).ToList();
+            // Only send the start and end points for the trendline
+            var trendline_points = new List<List<double>>
+            {
+                new List<double> { x_vals.Min(), slope * x_vals.Min() + intercept },
+                new List<double> { estimated_max_project_x, slope * estimated_max_project_x + intercept }
+            };
 
             var lower_pi_vals = new List<double>();
             var upper_pi_vals = new List<double>();
@@ -127,7 +129,7 @@
             return new BalanceAnalyticsResult
             {
                 HistoricalData = x_vals.Zip(y_vals, (x, y) => new List<double> { x, y }).ToList(),
-                Trendline = all_x_for_plot.Zip(y_predicted_all, (x, y) => new List<double> { x, y }).ToList(),
+                Trendline = trendline_points, // Sending only two points
                 LowerPredictionInterval = all_x_for_plot.Zip(lower_pi_vals, (x, y) => new List<double> { x, y }).ToList(),
                 UpperPredictionInterval = all_x_for_plot.Zip(upper_pi_vals, (x, y) => new List<double> { x, y }).ToList(),
                 OriginalXIntercept = original_x_intercept,
@@ -140,14 +142,6 @@
             };
         }
 
-        /// <summary>
-        /// Normalizes the provided balance data by adding back money that was lent out between a start and end date.
-        /// </summary>
-        /// <param name="data">The list of BalanceMonitor data points to normalize.</param>
-        /// <param name="amountLent">The amount of money that was lent out.</param>
-        /// <param name="startDate">The date the money was lent out.</param>
-        /// <param name="endDate">The date the money was paid back.</param>
-        /// <returns>A new list of BalanceMonitor objects with normalized amounts.</returns>
         public IEnumerable<BalanceMonitor> NormalizeLentMoney(IEnumerable<BalanceMonitor> data, decimal amountLent, DateTime startDate, DateTime endDate)
         {
             var normalizedData = new List<BalanceMonitor>();
@@ -156,7 +150,6 @@
             {
                 if (point.Updated >= startDate && point.Updated <= endDate)
                 {
-                    // Add back the amount lent to smooth the temporary balance drop.
                     normalizedData.Add(new BalanceMonitor
                     {
                         Id = point.Id,
@@ -166,7 +159,6 @@
                 }
                 else
                 {
-                    // For all other dates, the amount is the actual amount.
                     normalizedData.Add(new BalanceMonitor
                     {
                         Id = point.Id,
@@ -175,7 +167,6 @@
                     });
                 }
             }
-
             return normalizedData;
         }
     }
