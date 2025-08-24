@@ -64,21 +64,19 @@
                 estimated_max_project_x = x_vals.Max() + 100;
             }
 
-            // Generate a reduced number of points for the plots (e.g., 50)
             const int numPlotPoints = 50;
-            var all_x_for_plot = Enumerable.Range(0, numPlotPoints)
+            var plot_x_vals = Enumerable.Range(0, numPlotPoints)
                 .Select(i => start_x_for_plot + i * (estimated_max_project_x - start_x_for_plot) / (numPlotPoints - 1))
                 .ToArray();
 
-            // Only send the start and end points for the trendline
             var trendline_points = new List<List<double>>
             {
                 new List<double> { x_vals.Min(), slope * x_vals.Min() + intercept },
                 new List<double> { estimated_max_project_x, slope * estimated_max_project_x + intercept }
             };
 
-            var lower_pi_vals = new List<double>();
-            var upper_pi_vals = new List<double>();
+            var lower_pi_vals_plot = new List<double>();
+            var upper_pi_vals_plot = new List<double>();
             double alpha_val = 1 - confidenceLevel;
 
             double critical_t = 0;
@@ -87,51 +85,61 @@
                 critical_t = StudentT.InvCDF(0, 1, df_residuals, 1 - alpha_val / 2);
             }
 
-            foreach (var x_new in all_x_for_plot)
+            foreach (var x_new in plot_x_vals)
             {
                 double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
                 double y_pred_single = slope * x_new + intercept;
 
                 if (critical_t == 0)
                 {
-                    lower_pi_vals.Add(y_pred_single);
-                    upper_pi_vals.Add(y_pred_single);
+                    lower_pi_vals_plot.Add(y_pred_single);
+                    upper_pi_vals_plot.Add(y_pred_single);
                 }
                 else
                 {
-                    lower_pi_vals.Add(y_pred_single - critical_t * se_pred_single);
-                    upper_pi_vals.Add(y_pred_single + critical_t * se_pred_single);
+                    lower_pi_vals_plot.Add(y_pred_single - critical_t * se_pred_single);
+                    upper_pi_vals_plot.Add(y_pred_single + critical_t * se_pred_single);
                 }
             }
 
+            // --- NEW: Calculate run-out dates by solving the quadratic equation ---
             double earliest_run_out = double.PositiveInfinity;
             double latest_run_out = double.PositiveInfinity;
-            double max_x_val = x_vals.Max();
 
-            var search_points = all_x_for_plot
-                .Zip(lower_pi_vals, (x, y) => (X: x, LowerPI: y))
-                .Where(p => p.X >= max_x_val);
-
-            var earliest_run_out_point = search_points.FirstOrDefault(p => p.LowerPI <= 0);
-            if (earliest_run_out_point.X > 0) earliest_run_out = earliest_run_out_point.X;
-
-            var latest_run_out_point = all_x_for_plot
-                .Zip(upper_pi_vals, (x, y) => (X: x, UpperPI: y))
-                .Where(p => p.X >= max_x_val)
-                .FirstOrDefault(p => p.UpperPI <= 0);
-            if (latest_run_out_point.X > 0) latest_run_out = latest_run_out_point.X;
-
-            if (earliest_run_out > latest_run_out && latest_run_out != double.PositiveInfinity)
+            if (slope < 0 && critical_t > 0 && sum_sq_x_minus_mean > 0)
             {
-                (earliest_run_out, latest_run_out) = (latest_run_out, earliest_run_out);
+                // Coefficients for the quadratic equation: Ax^2 + Bx + C = 0
+                // For the lower PI (earliest run-out)
+                double a_lower = slope * slope - critical_t * critical_t * ser * ser / sum_sq_x_minus_mean;
+                double b_lower = 2 * slope * (intercept - slope * x_mean) + 2 * critical_t * critical_t * ser * ser * x_mean / sum_sq_x_minus_mean;
+                double c_lower = (intercept - slope * x_mean) * (intercept - slope * x_mean) - critical_t * critical_t * ser * ser * (1 + 1.0 / n + x_mean * x_mean / sum_sq_x_minus_mean);
+
+                double discriminant_lower = b_lower * b_lower - 4 * a_lower * c_lower;
+
+                if (discriminant_lower >= 0)
+                {
+                    earliest_run_out = (-b_lower + Math.Sqrt(discriminant_lower)) / (2 * a_lower);
+                }
+
+                // For the upper PI (latest run-out)
+                double a_upper = slope * slope - critical_t * critical_t * ser * ser / sum_sq_x_minus_mean;
+                double b_upper = 2 * slope * (intercept - slope * x_mean) + 2 * critical_t * critical_t * ser * ser * x_mean / sum_sq_x_minus_mean;
+                double c_upper = (intercept - slope * x_mean) * (intercept - slope * x_mean) - critical_t * critical_t * ser * ser * (1 + 1.0 / n + x_mean * x_mean / sum_sq_x_minus_mean);
+
+                double discriminant_upper = b_upper * b_upper - 4 * a_upper * c_upper;
+
+                if (discriminant_upper >= 0)
+                {
+                    latest_run_out = (-b_upper - Math.Sqrt(discriminant_upper)) / (2 * a_upper);
+                }
             }
 
             return new BalanceAnalyticsResult
             {
                 HistoricalData = x_vals.Zip(y_vals, (x, y) => new List<double> { x, y }).ToList(),
-                Trendline = trendline_points, // Sending only two points
-                LowerPredictionInterval = all_x_for_plot.Zip(lower_pi_vals, (x, y) => new List<double> { x, y }).ToList(),
-                UpperPredictionInterval = all_x_for_plot.Zip(upper_pi_vals, (x, y) => new List<double> { x, y }).ToList(),
+                Trendline = trendline_points,
+                LowerPredictionInterval = plot_x_vals.Zip(lower_pi_vals_plot, (x, y) => new List<double> { x, y }).ToList(),
+                UpperPredictionInterval = plot_x_vals.Zip(upper_pi_vals_plot, (x, y) => new List<double> { x, y }).ToList(),
                 OriginalXIntercept = original_x_intercept,
                 EarliestRunOutDateX = earliest_run_out,
                 LatestRunOutDateX = latest_run_out,
