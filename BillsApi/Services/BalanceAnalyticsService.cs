@@ -100,44 +100,33 @@
                 }
             }
 
-            // --- REVERTED LOGIC: Use a dense iterative search for run-out dates ---
+            // --- REPLACING ITERATIVE SEARCH FOR RUN-OUT DATES ---
             double earliest_run_out = double.PositiveInfinity;
             double latest_run_out = double.PositiveInfinity;
             double max_x_val = x_vals.Max();
 
-            // Use a higher density of points for accurate calculation
-            const int numCalculationPoints = 1000;
-            var calc_x_vals = Enumerable.Range(0, numCalculationPoints)
-                .Select(i => max_x_val + i * (estimated_max_project_x - max_x_val) / (numCalculationPoints - 1))
-                .ToArray();
-
-            // Find earliest run-out date from the lower prediction interval
-            foreach (var x_new in calc_x_vals)
+            // Define the function for the lower prediction interval
+            Func<double, double> lowerPiFunction = x_new =>
             {
                 double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
                 double y_pred_single = slope * x_new + intercept;
-                double lower_pi = y_pred_single - critical_t * se_pred_single;
+                return y_pred_single - critical_t * se_pred_single;
+            };
 
-                if (lower_pi <= 0)
-                {
-                    earliest_run_out = x_new;
-                    break;
-                }
-            }
-
-            // Find latest run-out date from the upper prediction interval
-            foreach (var x_new in calc_x_vals)
+            // Define the function for the upper prediction interval
+            Func<double, double> upperPiFunction = x_new =>
             {
                 double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
                 double y_pred_single = slope * x_new + intercept;
-                double upper_pi = y_pred_single + critical_t * se_pred_single;
+                return y_pred_single + critical_t * se_pred_single;
+            };
 
-                if (upper_pi <= 0)
-                {
-                    latest_run_out = x_new;
-                    break;
-                }
-            }
+            // Find the run-out date for the lower prediction interval
+            earliest_run_out = FindRootWithBisection(lowerPiFunction, max_x_val, estimated_max_project_x, 0.001);
+
+            // Find the run-out date for the upper prediction interval
+            latest_run_out = FindRootWithBisection(upperPiFunction, max_x_val, estimated_max_project_x, 0.001);
+
             // Ensure earliest is indeed earlier than latest
             if (earliest_run_out > latest_run_out && latest_run_out != double.PositiveInfinity)
             {
@@ -186,6 +175,41 @@
                 }
             }
             return normalizedData;
+        }
+
+        public double FindRootWithBisection(Func<double, double> function, double lowerBound, double upperBound, double tolerance)
+        {
+            double f_lower = function(lowerBound);
+            double f_upper = function(upperBound);
+
+            // Check if the root is within the initial interval
+            if (f_lower * f_upper >= 0)
+            {
+                return double.PositiveInfinity; // No root found in interval
+            }
+
+            double midpoint = 0;
+            // Iterate until the interval is smaller than the tolerance
+            while ((upperBound - lowerBound) >= tolerance)
+            {
+                midpoint = (lowerBound + upperBound) / 2;
+                double f_mid = function(midpoint);
+
+                if (f_mid == 0)
+                {
+                    return midpoint;
+                }
+                else if (f_mid * f_lower < 0)
+                {
+                    upperBound = midpoint;
+                }
+                else
+                {
+                    lowerBound = midpoint;
+                }
+            }
+
+            return (lowerBound + upperBound) / 2;
         }
     }
 }
