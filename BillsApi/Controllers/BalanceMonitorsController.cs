@@ -56,8 +56,8 @@ namespace BillsApi.Controllers
             var normalizedData = _analyticsService.NormalizeLentMoney(
                 balanceMonitors,
                 3019,
-                new DateTime(2024, 11, 15),
-                new DateTime(2025, 1, 16)
+                new DateTime(2024, 11, 15, 7, 0, 0),
+                new DateTime(2025, 1, 16, 7, 0, 0)
             );
 
             if (normalizedData == null || normalizedData.Count() < 3)

@@ -14,14 +14,11 @@
     {
         public BalanceAnalyticsResult Analyze(IEnumerable<BalanceMonitor> data)
         {
-            var firstUpdate = data.First().Updated;
-            long startTimeUnix = 0;
-            if (firstUpdate != null)
-            {
-                startTimeUnix = new DateTimeOffset((DateTime)firstUpdate).ToUnixTimeSeconds();
-            }
+            var firstUpdate = DateTime.SpecifyKind(data.First().Updated!.Value, DateTimeKind.Utc);
 
-            if (data.Count() < 3 || firstUpdate == null)
+            long startTimeUnix = new DateTimeOffset(firstUpdate).ToUnixTimeSeconds();
+
+            if (data.Count() < 3)
             {
                 throw new InvalidOperationException("Not enough data points for robust prediction intervals (minimum 3 required).");
             }
