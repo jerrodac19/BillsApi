@@ -13,11 +13,19 @@
 
         public async Task<IEnumerable<BalanceMonitor>> GetLatestDailyBalancesAsync()
         {
-            return await _context.BalanceMonitors
+            var arizonaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Phoenix");
+
+            // Fetch all relevant data from the database first
+            var allData = await _context.BalanceMonitors
                 .Where(b => b.Updated.HasValue)
-                .GroupBy(b => b.Updated!.Value.Date)
-                .Select(g => g.OrderByDescending(b => b.Updated).FirstOrDefault()!) // Use ! to assert non-nullability
-                .ToListAsync();
+                .OrderBy(b => b.Updated)
+                .ToListAsync(); // The async operation happens here
+
+            // Perform in-memory grouping using the local date
+            return allData
+                .GroupBy(b => TimeZoneInfo.ConvertTimeFromUtc(b.Updated!.Value, arizonaTimeZone).Date)
+                .Select(g => g.OrderByDescending(b => b.Updated).FirstOrDefault()!)
+                .ToList();
         }
     }
 }
