@@ -108,7 +108,7 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/balancemonitors/analytics')
+            fetch('/api/balancemonitors/analytics?Weights=True')
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
