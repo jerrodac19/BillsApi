@@ -48,7 +48,7 @@ namespace BillsApi.Controllers
         }
 
         [HttpGet("analytics")]
-        public async Task<ActionResult<BalanceAnalyticsResult>> GetAnalytics()
+        public async Task<ActionResult<BalanceAnalyticsResult>> GetAnalytics(bool weights = false)
         {
             var data = await _unitOfWork.BalanceMonitors.GetLatestDailyBalancesAsync();
 
@@ -64,7 +64,16 @@ namespace BillsApi.Controllers
                 return BadRequest("Not enough data points for analysis.");
             }
 
-            var result = _analyticsService.Analyze(normalizedData);
+            BalanceAnalyticsResult? result = null;
+
+            if (weights == false)
+            {
+                result = _analyticsService.Analyze(normalizedData);
+            }
+            else
+            {
+                result = _analyticsService.AnalyzeWithWeights(normalizedData);
+            }
 
             return Ok(result);
         }
