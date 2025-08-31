@@ -51,10 +51,9 @@ namespace BillsApi.Controllers
         public async Task<ActionResult<BalanceAnalyticsResult>> GetAnalytics()
         {
             var data = await _unitOfWork.BalanceMonitors.GetLatestDailyBalancesAsync();
-            var balanceMonitors = data.ToList();
 
             var normalizedData = _analyticsService.NormalizeLentMoney(
-                balanceMonitors,
+                data,
                 3019,
                 new DateTime(2024, 11, 15, 7, 0, 0),
                 new DateTime(2025, 1, 16, 7, 0, 0)

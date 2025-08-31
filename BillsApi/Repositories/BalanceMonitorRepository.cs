@@ -24,8 +24,7 @@
             // Perform in-memory grouping using the local date
             return allData
                 .GroupBy(b => TimeZoneInfo.ConvertTimeFromUtc(b.Updated!.Value, arizonaTimeZone).Date)
-                .Select(g => g.OrderByDescending(b => b.Updated).FirstOrDefault()!)
-                .ToList();
+                .Select(g => g.LastOrDefault()!);
         }
     }
 }

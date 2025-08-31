@@ -23,14 +23,20 @@
                 throw new InvalidOperationException("Not enough data points for robust prediction intervals (minimum 3 required).");
             }
 
-            var dataPoints = data
-                .OrderBy(b => b.Updated)
-                .ToList();
-
-            var x_vals = dataPoints.Select(dp => ((DateTime)(dp.Updated!.Value) - (DateTime)firstUpdate).TotalDays).ToArray();
-            var y_vals = dataPoints.Select(dp => (double)dp.Amount!).ToArray();
+            var x_vals = data.Select(dp => ((DateTime)(dp.Updated!.Value) - (DateTime)firstUpdate).TotalDays).ToArray();
+            var y_vals = data.Select(dp => (double)dp.Amount!).ToArray();
 
             var (intercept, slope) = SimpleRegression.Fit(x_vals, y_vals);
+
+            //this function shouldn't be used if the slope isn't negative
+            if (slope >= 0)
+            {
+                throw new InvalidOperationException("This calculation is only inteneded for negatively trending data, the given data isn't trending negative");
+            }
+            if (intercept <= 0)
+            {
+                throw new InvalidOperationException("This calculation is only inteneded for an positive balance and the starting balance is negative");
+            }
 
             var y_predicted_historical = x_vals.Select(x => slope * x + intercept).ToArray();
 
@@ -47,19 +53,12 @@
             double x_mean = x_vals.Average();
             double sum_sq_x_minus_mean = x_vals.Sum(x => Math.Pow(x - x_mean, 2));
 
-            double original_x_intercept = slope != 0 ? -intercept / slope : double.PositiveInfinity;
+            double original_x_intercept = -intercept / slope;
 
             double start_x_for_plot = x_vals.Min();
-            double estimated_max_project_x = Math.Max(original_x_intercept, x_vals.Max() + 30);
-            if (slope < 0)
-            {
-                estimated_max_project_x = Math.Max(estimated_max_project_x, original_x_intercept + 0.5 * Math.Abs(original_x_intercept));
-                estimated_max_project_x = Math.Max(estimated_max_project_x, x_vals.Max() + 100);
-            }
-            else
-            {
-                estimated_max_project_x = x_vals.Max() + 100;
-            }
+
+            //assume slope will always be less than 0
+            double estimated_max_project_x = 1.5 * original_x_intercept;
 
             // For plotting, use a reduced number of points for performance
             const int numPlotPoints = 50;
@@ -83,28 +82,6 @@
                 critical_t = StudentT.InvCDF(0, 1, df_residuals, 1 - alpha_val / 2);
             }
 
-            foreach (var x_new in plot_x_vals)
-            {
-                double se_pred_single = ser * Math.Sqrt(1 + (1.0 / n) + (Math.Pow(x_new - x_mean, 2) / sum_sq_x_minus_mean));
-                double y_pred_single = slope * x_new + intercept;
-
-                if (critical_t == 0)
-                {
-                    lower_pi_vals_plot.Add(y_pred_single);
-                    upper_pi_vals_plot.Add(y_pred_single);
-                }
-                else
-                {
-                    lower_pi_vals_plot.Add(y_pred_single - critical_t * se_pred_single);
-                    upper_pi_vals_plot.Add(y_pred_single + critical_t * se_pred_single);
-                }
-            }
-
-            // --- REPLACING ITERATIVE SEARCH FOR RUN-OUT DATES ---
-            double earliest_run_out = double.PositiveInfinity;
-            double latest_run_out = double.PositiveInfinity;
-            double max_x_val = x_vals.Max();
-
             // Define the function for the lower prediction interval
             Func<double, double> lowerPiFunction = x_new =>
             {
@@ -121,17 +98,22 @@
                 return y_pred_single + critical_t * se_pred_single;
             };
 
+            foreach (var x_new in plot_x_vals)
+            {
+                lower_pi_vals_plot.Add(lowerPiFunction(x_new));
+                upper_pi_vals_plot.Add(upperPiFunction(x_new));
+            }
+
+            // --- REPLACING ITERATIVE SEARCH FOR RUN-OUT DATES ---
+            double earliest_run_out = double.PositiveInfinity;
+            double latest_run_out = double.PositiveInfinity;
+            double max_x_val = x_vals.Max();
+
             // Find the run-out date for the lower prediction interval
             earliest_run_out = FindRootWithBisection(lowerPiFunction, max_x_val, estimated_max_project_x, 0.001);
 
             // Find the run-out date for the upper prediction interval
             latest_run_out = FindRootWithBisection(upperPiFunction, max_x_val, estimated_max_project_x, 0.001);
-
-            // Ensure earliest is indeed earlier than latest
-            if (earliest_run_out > latest_run_out && latest_run_out != double.PositiveInfinity)
-            {
-                (earliest_run_out, latest_run_out) = (latest_run_out, earliest_run_out);
-            }
 
             return new BalanceAnalyticsResult
             {
