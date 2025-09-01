@@ -24,7 +24,7 @@
                 query = query.Where(b => b.Active == true);
             }
 
-            return await query.ToListAsync();
+            return await query.OrderBy(b => b.DueDate).ToListAsync();
         }
 
         public async Task<Bill?> GetBillWithConfigurationByIdAsync(int id)
