@@ -35,9 +35,10 @@ async function renderBillList() {
 
         // calculate the bill total
         const totalDue = state.bills.reduce((sum, bill) => sum + bill.amount, 0);
+        const otherSpending = dashboardData.monthlySpending - totalDue;
 
         const { totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
-        const remaining = reconciledTotal - totalDue;
+        const remaining = reconciledTotal - totalDue - otherSpending;
 
         const now = new Date();
         const lastUpdatedAccount = new Date(state.accountInfo.updated + "Z");
@@ -50,6 +51,7 @@ async function renderBillList() {
         document.getElementById("remain").innerHTML = formatDollarAmount(remaining);
         document.getElementById("expected-income").innerHTML = formatDollarAmount(totalExpected);
         document.getElementById("actual-income").innerHTML = formatDollarAmount(totalActual);
+        document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
 
         // Step 5: Render the bills table
         billsTableBody.innerHTML = state.bills.map(renderBillRow).join('');

@@ -37,6 +37,14 @@ namespace BillsApi.Controllers
             return Ok(transactions);
         }
 
+        [HttpGet("monthlySpending")]
+        public async Task<ActionResult<decimal>> GetMonthlySpending([FromQuery] string? accountName = null)
+        {
+            var totalAmountSpent = await _unitOfWork.Transactions.GetMonthlySpendingAsync(accountName);
+
+            return Ok(totalAmountSpent);
+        }
+
         [HttpPost]
         public async Task<ActionResult<Transaction>> PostTransaction([FromBody] CreateTransactionDto createTransactionDto)
         {

@@ -36,5 +36,22 @@
             }
             return await query.OrderByDescending(t => t.Id).ToListAsync();
         }
+
+        public async Task<decimal> GetMonthlySpendingAsync(string? accountName)
+        {
+            var query = _context.Transactions.AsQueryable();
+            DateTime today = DateTime.Today;
+            DateTime firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+
+            query = query.Where(t => t.Withdrawal > 0 && t.Date != null && t.Date >= firstDayOfMonth);
+
+            if (!string.IsNullOrEmpty(accountName))
+            {
+                query = query.Where(t => t.AccountName != null && t.AccountName == accountName);
+            }
+
+            var totalSpending = await query.SumAsync(t => t.Withdrawal);
+            return (decimal)totalSpending;
+        }
     }
 }

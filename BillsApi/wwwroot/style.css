@@ -27,7 +27,7 @@ h1 {
 }
 
 h2 {
-    font-size: 1.5em;
+    font-size: 1.2em;
     margin-top: 0.1em;
     margin-bottom: 0.1em;
     color: var(--secondary-text-color);
@@ -198,7 +198,7 @@ span.status {
     color: var(--status-ok-color);
 }
 
-#billtotal, #weekly {
+#billtotal, #weekly, #otherspending {
     color: var(--status-orange-color);
 }
 
@@ -228,7 +228,7 @@ span.status {
     }
 
     h2 {
-        font-size: 3em;
+        font-size: 2.5em;
         margin-top: 0.3em;
         margin-bottom: 0.3em;
     }
