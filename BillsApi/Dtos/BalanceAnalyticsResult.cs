@@ -3,6 +3,7 @@
     public class BalanceAnalyticsResult
     {
         public required List<List<double>> HistoricalData { get; set; }
+        public required List<double> HistoricalWeights { get; set; }
         public required List<List<double>> Trendline { get; set; }
         public required List<List<double>> LowerPredictionInterval { get; set; }
         public required List<List<double>> UpperPredictionInterval { get; set; }

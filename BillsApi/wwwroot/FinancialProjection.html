@@ -108,7 +108,7 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/balancemonitors/analytics?Weights=True')
+            fetch('/api/balancemonitors/analytics?weightDecayRate=0.003&confidenceLevel=0.99')
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
@@ -131,6 +131,19 @@
                     const trendlineChartData = formatDataForChart(data.trendline);
                     const lowerPIChartData = formatDataForChart(data.lowerPredictionInterval);
                     const upperPIChartData = formatDataForChart(data.upperPredictionInterval);
+
+                    const pointColors = data.historicalWeights.map(weight => {
+                        const minOpacity = 0.0;
+                        const maxOpacity = 0.6;
+                        const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
+                        return `rgba(75, 192, 192, ${normalizedWeight})`;
+                    });
+                    const pointColorsBorder = data.historicalWeights.map(weight => {
+                        const minOpacity = 0.0;
+                        const maxOpacity = 1.0;
+                        const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
+                        return `rgba(75, 192, 192, ${normalizedWeight})`;
+                    });
 
                     const minXDate = historicalChartData[0].x;
                     let maxXDate = trendlineChartData[trendlineChartData.length - 1].x;
@@ -165,15 +178,15 @@
                     infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
 
                     const ctx = document.getElementById('myFinancialChart').getContext('2d');
-                    new Chart(ctx, {
+                    const myChart = new Chart(ctx, {
                         type: 'line',
                         data: {
                             datasets: [
                                 {
                                     label: 'Historical Balance',
                                     data: historicalChartData,
-                                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                                    borderColor: 'rgba(75, 192, 192, 1)',
+                                    backgroundColor: pointColors,
+                                    borderColor: pointColorsBorder,
                                     type: 'scatter',
                                     showLine: false,
                                     pointRadius: pointSize
@@ -246,6 +259,16 @@
                             }
                         }
                     });
+                    // Wait for a small delay to ensure the chart has fully rendered
+                    setTimeout(() => {
+                        myChart.tooltip.setActiveElements([
+                            {
+                                datasetIndex: 0,
+                                index: historicalChartData.length - 1
+                            }
+                        ]);
+                        myChart.update();
+                    }, 500); // 500ms delay
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
