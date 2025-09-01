@@ -84,7 +84,18 @@
 
             Func<double, double> lowerPiFunction = x_new =>
             {
-                double w_new = Math.Exp(-alpha * (max_x - x_new));
+                double w_new;
+                if (x_new <= max_x)
+                {
+                    // Use the original exponential decay for historical points
+                    w_new = Math.Exp(-alpha * (max_x - x_new));
+                }
+                else
+                {
+                    // For future predictions, the weight should not grow. Set to a constant value.
+                    // The value 1.0 is used here as a logical baseline.
+                    w_new = 1.0;
+                }
                 double se_pred_single = ser * Math.Sqrt((1.0 / w_new) + (1.0 / sumOfWeights) + (Math.Pow(x_new - weightedMeanX, 2) / sum_weighted_sq_x_minus_mean));
                 double y_pred_single = slope * x_new + intercept;
                 return y_pred_single - critical_t * se_pred_single;
@@ -92,7 +103,18 @@
 
             Func<double, double> upperPiFunction = x_new =>
             {
-                double w_new = Math.Exp(-alpha * (max_x - x_new));
+                double w_new;
+                if (x_new <= max_x)
+                {
+                    // Use the original exponential decay for historical points
+                    w_new = Math.Exp(-alpha * (max_x - x_new));
+                }
+                else
+                {
+                    // For future predictions, the weight should not grow. Set to a constant value.
+                    // The value 1.0 is used here as a logical baseline.
+                    w_new = 1.0;
+                }
                 double se_pred_single = ser * Math.Sqrt((1.0 / w_new) + (1.0 / sumOfWeights) + (Math.Pow(x_new - weightedMeanX, 2) / sum_weighted_sq_x_minus_mean));
                 double y_pred_single = slope * x_new + intercept;
                 return y_pred_single + critical_t * se_pred_single;
