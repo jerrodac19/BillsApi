@@ -2,6 +2,7 @@
 appsettings.json
 appsettings.*.json
 !appsettings.template.json
+remotewebsitecontrol.ps1
 
 # User-specific files
 *.suo
