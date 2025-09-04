@@ -130,16 +130,17 @@
             double latest_run_out = FindRootWithBisection(upperPiFunction, max_x, estimated_max_project_x, 0.001);
 
             // --- REGENERATED LOGIC FOR PLOTTING HISTORICAL DATA ---
+            int reduceVisualPointFactor = 5;
             var historical_data = new List<List<double>>();
             var historicalWeights = new List<double>();
-            for (int i = 0; i < x_vals.Length; i += 10)
+            for (int i = 0; i < x_vals.Length; i += reduceVisualPointFactor)
             {
                 historical_data.Add(new List<double> { x_vals[i], y_vals[i] });
                 historicalWeights.Add(weights[i]);
             }
 
             // Always add the last point to ensure the plot is accurate to the latest data
-            if ((x_vals.Length - 1) % 10 != 0)
+            if ((x_vals.Length - 1) % reduceVisualPointFactor != 0)
             {
                 historical_data.Add(new List<double> { x_vals.Last(), y_vals.Last() });
                 historicalWeights.Add(weights.Last());
