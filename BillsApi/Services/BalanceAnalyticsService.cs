@@ -163,18 +163,18 @@
             };
         }
 
-        public IEnumerable<BalanceMonitor> NormalizeLentMoney(IEnumerable<BalanceMonitor> data, decimal amountLent, DateTime startDate, DateTime endDate)
+        public IEnumerable<BalanceMonitor> NormalizeLentMoney(IEnumerable<BalanceMonitor> data, LentMoneyPeriod lentMoneyPeriod)
         {
             var normalizedData = new List<BalanceMonitor>();
 
             foreach (var point in data)
             {
-                if (point.Updated >= startDate && point.Updated <= endDate)
+                if (point.Updated >= lentMoneyPeriod.StartDate && point.Updated <= lentMoneyPeriod.EndDate)
                 {
                     normalizedData.Add(new BalanceMonitor
                     {
                         Id = point.Id,
-                        Amount = point.Amount + amountLent,
+                        Amount = point.Amount + lentMoneyPeriod.Amount,
                         Updated = point.Updated
                     });
                 }

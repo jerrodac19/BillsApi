@@ -108,7 +108,22 @@
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/api/balancemonitors/analytics?confidenceLevel=0.99')
+            // Define the data payload
+            const lentMoney = [{
+                amount: 3019,
+                startDate: '2024-11-15T07:00:00Z',
+                endDate: '2025-01-16T07:00:00Z'
+            }];
+
+            // Set up the fetch options for a POST request
+            const options = {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(lentMoney)
+            };
+            fetch('/api/balancemonitors/analytics?confidenceLevel=0.99', options)
                 .then(response => response.json())
                 .then(data => {
                     if (data.error) {
