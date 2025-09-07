@@ -36,7 +36,7 @@ async function renderBillList() {
         // calculate the bill total
         const totalDue = state.bills.reduce((sum, bill) => sum + bill.amount, 0);
         const totalPayed = state.bills.filter(b => b.payed === true).reduce((sum, bill) => sum + bill.amount, 0);
-        const otherSpending = dashboardData.monthlySpending - totalPayed;
+        const otherSpending = dashboardData.monthlySpendingTotal - totalPayed;
 
         const { totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
         const remaining = reconciledTotal - totalDue - otherSpending;

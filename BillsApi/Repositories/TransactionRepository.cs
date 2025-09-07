@@ -37,7 +37,7 @@
             return await query.OrderByDescending(t => t.Id).ToListAsync();
         }
 
-        public async Task<decimal> GetMonthlySpendingAsync(string? accountName)
+        public async Task<decimal> GetMonthlySpendingTotalAsync(string? accountName)
         {
             var query = _context.Transactions.AsQueryable();
             DateTime today = DateTime.Today;

@@ -37,10 +37,10 @@ namespace BillsApi.Controllers
             return Ok(transactions);
         }
 
-        [HttpGet("monthlySpending")]
-        public async Task<ActionResult<decimal>> GetMonthlySpending([FromQuery] string? accountName = null)
+        [HttpGet("monthlySpendingTotal")]
+        public async Task<ActionResult<decimal>> GetMonthlySpendingTotal([FromQuery] string? accountName = null)
         {
-            var totalAmountSpent = await _unitOfWork.Transactions.GetMonthlySpendingAsync(accountName);
+            var totalAmountSpent = await _unitOfWork.Transactions.GetMonthlySpendingTotalAsync(accountName);
 
             return Ok(totalAmountSpent);
         }

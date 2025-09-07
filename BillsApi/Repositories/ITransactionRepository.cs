@@ -9,6 +9,6 @@
     {
         Task<IEnumerable<Transaction>> GetLastNTransactionsAsync(int n, string? accountName);
         Task<IEnumerable<Transaction>> GetMonthlyIncomeAsync(string? accountName);
-        Task<decimal> GetMonthlySpendingAsync(string? accountName);
+        Task<decimal> GetMonthlySpendingTotalAsync(string? accountName);
     }
 }

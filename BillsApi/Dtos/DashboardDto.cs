@@ -9,6 +9,6 @@ namespace BillsApi.Dtos
         public IEnumerable<Bill>? Bills { get; set; }
         public IEnumerable<Income>? ExpectedIncome { get; set; }
         public IEnumerable<Transaction>? MonthlyIncome { get; set; }
-        public Decimal? MonthlySpending { get; set; }
+        public Decimal? MonthlySpendingTotal { get; set; }
     }
 }

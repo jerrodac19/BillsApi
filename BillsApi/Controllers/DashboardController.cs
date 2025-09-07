@@ -24,7 +24,7 @@ namespace BillsApi.Controllers
             var bills = await _unitOfWork.Bills.GetBillsWithConfigurationAsync(null);
             var expectedIncome = await _unitOfWork.Incomes.GetIncomesByGroupIdAsync(1);
             var monthlyIncome = await _unitOfWork.Transactions.GetMonthlyIncomeAsync(null);
-            var monthlySpending = await _unitOfWork.Transactions.GetMonthlySpendingAsync(null);
+            var monthlySpendingTotal = await _unitOfWork.Transactions.GetMonthlySpendingTotalAsync(null);
 
             // Create a DTO to hold the combined data
             var dashboardData = new DashboardDto
@@ -33,7 +33,7 @@ namespace BillsApi.Controllers
                 Bills = bills,
                 ExpectedIncome = expectedIncome,
                 MonthlyIncome = monthlyIncome,
-                MonthlySpending = monthlySpending
+                MonthlySpendingTotal = monthlySpendingTotal
             };
 
             return Ok(dashboardData);
