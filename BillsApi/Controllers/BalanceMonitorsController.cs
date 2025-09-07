@@ -47,8 +47,8 @@ namespace BillsApi.Controllers
             return CreatedAtAction(nameof(GetLatestBalanceMonitors), new { id = accountBalance.Id }, accountBalance);
         }
 
-        [HttpGet("analytics")]
-        public async Task<ActionResult<BalanceAnalyticsResult>> GetAnalytics([FromQuery] List<LentMoneyPeriod>? lentMoneyPeriods, double weightDecayRate = 0, double confidenceLevel = 0.99)
+        [HttpPost("analytics")]
+        public async Task<ActionResult<BalanceAnalyticsResult>> GetAnalytics([FromBody] List<LentMoneyPeriod>? lentMoneyPeriods, double weightDecayRate = 0, double confidenceLevel = 0.99)
         {
             var data = await _unitOfWork.BalanceMonitors.GetLatestDailyBalancesAsync();
 
