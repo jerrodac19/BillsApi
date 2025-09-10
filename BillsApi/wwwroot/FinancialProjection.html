@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Financial Projection</title>
+    <link rel="manifest" href="/manifest.json">
 
     <script src="https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
@@ -107,7 +108,47 @@
         <canvas id="myFinancialChart"></canvas>
     </div>
     <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js');
+        });
+      }
+    </script>
+    <script>
+        let myChart = null;
         document.addEventListener('DOMContentLoaded', () => {
+            if (!navigator.onLine) {
+                console.log('App is running in standalone mode. Loading from IndexedDB.');
+                // If it's a PWA, immediately try to load from the local database.
+                loadDataFromIndexedDB();
+            } else {
+                console.log('App is running in a browser tab. Attempting network fetch.');
+                // If it's a regular browser tab, proceed with the normal fetch logic.
+                fetchAndRenderData();
+            }
+        });
+        function loadDataFromIndexedDB() {
+            // Attempt to load from IndexedDB first
+            const request = indexedDB.open('FinancialDB', 1);
+
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction('analytics', 'readonly');
+                const store = transaction.objectStore('analytics');
+                const getRequest = store.get(1); // Retrieve the record with key '1'
+
+                getRequest.onsuccess = () => {
+                    if (getRequest.result) {
+                        // If data is found, render the chart immediately
+                        const data = getRequest.result.content;
+                        renderChart(data); // A new function to encapsulate chart rendering logic
+                        document.getElementById('info-panel').innerHTML += `<p style="color: yellow;">Currently in offline mode. Displaying last cached data.</p>`;
+                        console.log('Loaded data from IndexedDB.');
+                    }
+                };
+            };
+        }
+        function fetchAndRenderData() {
             // Define the data payload
             const lentMoney = [{
                 amount: 3019,
@@ -126,170 +167,205 @@
             fetch('/api/balancemonitors/analytics?weightDecayRate=0.003&confidenceLevel=0.99', options)
                 .then(response => response.json())
                 .then(data => {
-                    if (data.error) {
-                        console.error("Error from backend:", data.error);
-                        document.getElementById('info-panel').innerHTML = `<p style="color: red;">Error loading financial data: ${data.error}</p>`;
-                        return;
-                    }
-
-                    const pointSize = getComputedStyle(document.querySelector('.chart-container')).getPropertyValue('--point-size');
-                    const startDate = new Date(data.startTimeUnix * 1000);
-
-                    const formatDataForChart = (arr) => {
-                        return arr.map(point => ({
-                            x: new Date(startDate.getTime() + point[0] * 24 * 60 * 60 * 1000),
-                            y: point[1]
-                        }));
-                    };
-
-                    const historicalChartData = formatDataForChart(data.historicalData);
-                    const trendlineChartData = formatDataForChart(data.trendline);
-                    const lowerPIChartData = formatDataForChart(data.lowerPredictionInterval);
-                    const upperPIChartData = formatDataForChart(data.upperPredictionInterval);
-
-                    const pointColors = data.historicalWeights.map(weight => {
-                        const minOpacity = 0.0;
-                        const maxOpacity = 0.6;
-                        const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
-                        return `rgba(75, 192, 192, ${normalizedWeight})`;
-                    });
-                    const pointColorsBorder = data.historicalWeights.map(weight => {
-                        const minOpacity = 0.0;
-                        const maxOpacity = 1.0;
-                        const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
-                        return `rgba(75, 192, 192, ${normalizedWeight})`;
-                    });
-
-                    const minXDate = historicalChartData[0].x;
-                    let maxXDate = trendlineChartData[trendlineChartData.length - 1].x;
-                    const totalRangeMs = maxXDate.getTime() - minXDate.getTime();
-                    const bufferMs = totalRangeMs * 0.05;
-                    maxXDate = new Date(maxXDate.getTime() + bufferMs);
-
-                    const maxAmount = historicalChartData[0].y;
-                    let minAmount = historicalChartData[historicalChartData.length - 1].y;
-                    const buffferAmount = (maxAmount - minAmount) * 0.1;
-                    minAmount = Math.floor((minAmount - buffferAmount) / 1000) * 1000;
-
-                    let earliestRunOutDate = null;
-                    let latestRunOutDate = null;
-
-                    if (data.earliestRunOutDateX && data.earliestRunOutDateX !== Infinity) {
-                        earliestRunOutDate = new Date(startDate.getTime() + data.earliestRunOutDateX * 24 * 60 * 60 * 1000);
-                    }
-
-                    if (data.latestRunOutDateX && data.latestRunOutDateX !== Infinity) {
-                        latestRunOutDate = new Date(startDate.getTime() + data.latestRunOutDateX * 24 * 60 * 60 * 1000);
-                    }
-
-                    const earliestDateDisplay = earliestRunOutDate ? earliestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
-                    const latestDateDisplay = latestRunOutDate && latestRunOutDate !== Infinity ? latestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
-
-                    let trendlineinformation = [];
-                    trendlineinformation.push(`Money estimated to last until:`);
-                    trendlineinformation.push(`Earliest Date: ${earliestDateDisplay}`);
-                    trendlineinformation.push(`Latest Date: ${latestDateDisplay}`);
-                    const infoPanel = document.getElementById('info-panel');
-                    infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
-
-                    const ctx = document.getElementById('myFinancialChart').getContext('2d');
-                    const myChart = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            datasets: [
-                                {
-                                    label: 'Historical Balance',
-                                    data: historicalChartData,
-                                    backgroundColor: pointColors,
-                                    borderColor: pointColorsBorder,
-                                    type: 'scatter',
-                                    showLine: false,
-                                    pointRadius: pointSize
-                                },
-                                {
-                                    label: 'Trendline',
-                                    data: trendlineChartData,
-                                    borderColor: 'red',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5],
-                                    fill: false,
-                                    pointRadius: 0
-                                },
-                                {
-                                    label: 'Prediction Interval (Upper)',
-                                    data: upperPIChartData,
-                                    borderColor: 'rgba(0, 200, 0, 0.5)',
-                                    borderWidth: 1,
-                                    fill: false,
-                                    pointRadius: 0
-                                },
-                                {
-                                    label: 'Prediction Interval (Lower)',
-                                    data: lowerPIChartData,
-                                    borderColor: 'rgba(0, 200, 0, 0.5)',
-                                    borderWidth: 1,
-                                    fill: '-1',
-                                    backgroundColor: 'rgba(0, 200, 0, 0.1)',
-                                    pointRadius: 0
-                                }
-                            ]
-                        },
-                        options: {
-                            maintainAspectRatio: false,
-                            scales: {
-                                x: {
-                                    type: 'time',
-                                    time: {
-                                        unit: 'day',
-                                        tooltipFormat: 'MMM D, YYYY'
-                                    },
-                                    title: {
-                                        display: true,
-                                        text: 'Date'
-                                    },
-                                    min: minXDate,
-                                    max: latestRunOutDate
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Money Balance ($)'
-                                    },
-                                    min: 0
-                                }
-                            },
-                            plugins: {
-                                tooltip: {
-                                    callbacks: {
-                                        title: function (context) {
-                                            return new Date(context[0].parsed.x).toLocaleDateString();
-                                        },
-                                        label: function (context) {
-                                            return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
-                                        }
-                                    }
-                                },
-                                annotation: {}
-                            }
-                        }
-                    });
-                    // Wait for a small delay to ensure the chart has fully rendered
-                    setTimeout(() => {
-                        myChart.tooltip.setActiveElements([
-                            {
-                                datasetIndex: 0,
-                                index: historicalChartData.length - 1
-                            }
-                        ]);
-                        myChart.update();
-                    }, 500); // 500ms delay
+                    // Render the chart with new data
+                    renderChart(data);
+                    // Store the new data for future offline use
+                    storeDataInIndexedDB(data);
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
                     document.getElementById('info-panel').innerHTML = `<p style="color: red;">Could not load chart data. Check the server console.</p>`;
                 });
-        });
+        }
+        function storeDataInIndexedDB(data) {
+            const request = indexedDB.open('FinancialDB', 1);
+
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                db.createObjectStore('analytics', { keyPath: 'id' });
+            };
+
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction('analytics', 'readwrite');
+                const store = transaction.objectStore('analytics');
+
+                // Assuming your data has a unique identifier
+                const record = { id: 1, content: data, timestamp: Date.now() };
+                store.put(record);
+
+                transaction.oncomplete = () => {
+                    console.log('Data stored successfully in IndexedDB');
+                };
+            };
+
+            request.onerror = (event) => {
+                console.error('IndexedDB error:', event.target.errorCode);
+            };
+        }
+        function renderChart(data) {
+            if (data.error) {
+                console.error("Error from backend:", data.error);
+                document.getElementById('info-panel').innerHTML = `<p style="color: red;">Error loading financial data: ${data.error}</p>`;
+                return;
+            }
+            if (myChart) {
+                myChart.destroy();
+            }
+
+            const pointSize = getComputedStyle(document.querySelector('.chart-container')).getPropertyValue('--point-size');
+            const startDate = new Date(data.startTimeUnix * 1000);
+
+            const formatDataForChart = (arr) => {
+                return arr.map(point => ({
+                    x: new Date(startDate.getTime() + point[0] * 24 * 60 * 60 * 1000),
+                    y: point[1]
+                }));
+            };
+
+            const historicalChartData = formatDataForChart(data.historicalData);
+            const trendlineChartData = formatDataForChart(data.trendline);
+            const lowerPIChartData = formatDataForChart(data.lowerPredictionInterval);
+            const upperPIChartData = formatDataForChart(data.upperPredictionInterval);
+
+            const pointColors = data.historicalWeights.map(weight => {
+                const minOpacity = 0.0;
+                const maxOpacity = 0.6;
+                const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
+                return `rgba(75, 192, 192, ${normalizedWeight})`;
+            });
+            const pointColorsBorder = data.historicalWeights.map(weight => {
+                const minOpacity = 0.0;
+                const maxOpacity = 1.0;
+                const normalizedWeight = minOpacity + weight * (maxOpacity - minOpacity);
+                return `rgba(75, 192, 192, ${normalizedWeight})`;
+            });
+
+            const minXDate = historicalChartData[0].x;
+            let maxXDate = trendlineChartData[trendlineChartData.length - 1].x;
+            const totalRangeMs = maxXDate.getTime() - minXDate.getTime();
+            const bufferMs = totalRangeMs * 0.05;
+            maxXDate = new Date(maxXDate.getTime() + bufferMs);
+
+            const maxAmount = historicalChartData[0].y;
+            let minAmount = historicalChartData[historicalChartData.length - 1].y;
+            const buffferAmount = (maxAmount - minAmount) * 0.1;
+            minAmount = Math.floor((minAmount - buffferAmount) / 1000) * 1000;
+
+            let earliestRunOutDate = null;
+            let latestRunOutDate = null;
+
+            if (data.earliestRunOutDateX && data.earliestRunOutDateX !== Infinity) {
+                earliestRunOutDate = new Date(startDate.getTime() + data.earliestRunOutDateX * 24 * 60 * 60 * 1000);
+            }
+
+            if (data.latestRunOutDateX && data.latestRunOutDateX !== Infinity) {
+                latestRunOutDate = new Date(startDate.getTime() + data.latestRunOutDateX * 24 * 60 * 60 * 1000);
+            }
+
+            const earliestDateDisplay = earliestRunOutDate ? earliestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
+            const latestDateDisplay = latestRunOutDate && latestRunOutDate !== Infinity ? latestRunOutDate.toLocaleDateString() : 'N/A (Money may not run out within projected range)';
+
+            let trendlineinformation = [];
+            trendlineinformation.push(`Money estimated to last until:`);
+            trendlineinformation.push(`Earliest Date: ${earliestDateDisplay}`);
+            trendlineinformation.push(`Latest Date: ${latestDateDisplay}`);
+            const infoPanel = document.getElementById('info-panel');
+            infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
+
+            const ctx = document.getElementById('myFinancialChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Historical Balance',
+                            data: historicalChartData,
+                            backgroundColor: pointColors,
+                            borderColor: pointColorsBorder,
+                            type: 'scatter',
+                            showLine: false,
+                            pointRadius: pointSize
+                        },
+                        {
+                            label: 'Trendline',
+                            data: trendlineChartData,
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Prediction Interval (Upper)',
+                            data: upperPIChartData,
+                            borderColor: 'rgba(0, 200, 0, 0.5)',
+                            borderWidth: 1,
+                            fill: false,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Prediction Interval (Lower)',
+                            data: lowerPIChartData,
+                            borderColor: 'rgba(0, 200, 0, 0.5)',
+                            borderWidth: 1,
+                            fill: '-1',
+                            backgroundColor: 'rgba(0, 200, 0, 0.1)',
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                unit: 'day',
+                                tooltipFormat: 'MMM D, YYYY'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Date'
+                            },
+                            min: minXDate,
+                            max: latestRunOutDate
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Money Balance ($)'
+                            },
+                            min: 0
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                title: function (context) {
+                                    return new Date(context[0].parsed.x).toLocaleDateString();
+                                },
+                                label: function (context) {
+                                    return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        },
+                        annotation: {}
+                    }
+                }
+            });
+            // Wait for a small delay to ensure the chart has fully rendered
+            setTimeout(() => {
+                myChart.tooltip.setActiveElements([
+                    {
+                        datasetIndex: 0,
+                        index: historicalChartData.length - 1
+                    }
+                ]);
+                myChart.update();
+            }, 500); // 500ms delay
+        }
     </script>
 </body>
 </html>
