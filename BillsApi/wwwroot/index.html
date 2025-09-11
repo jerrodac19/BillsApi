@@ -3,8 +3,16 @@
 <head>
     <title>The Bills App</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="/manifest-bills.json">
 </head>
 <body>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw-bills.js');
+        });
+      }
+    </script>
     <div id="app-container"/>
     <script src="app.js"></script>
 </body>

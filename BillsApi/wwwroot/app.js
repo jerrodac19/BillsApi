@@ -5,6 +5,7 @@ const state = {
     expectedIncome: [],
     actualTransactions: []
 };
+const FETCH_TIMEOUT = 5000; // 5 seconds
 
 // Main function to fetch all data and render the bill list page
 async function renderBillList() {
@@ -20,53 +21,123 @@ async function renderBillList() {
         const billsTableBody = document.querySelector("#billsTable tbody");
         billsTableBody.innerHTML = `<tr><td colspan="3" class="statusRow">Loading bills...</td></tr>`;
 
-        // Step 3: Fetch all the necessary data in a single call to the new DashboardController
-        const dashboardResponse = await fetch('/api/dashboard');
-        if (!dashboardResponse.ok) {
+        // Step 3: Use Promise.race to handle timeout and network request
+        const controller = new AbortController();
+        const signal = controller.signal;
+
+        const networkFetch = fetch('/api/dashboard', { signal });
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => {
+                controller.abort();
+                reject(new Error('timeout'));
+            }, FETCH_TIMEOUT);
+        });
+
+        const response = await Promise.race([networkFetch, timeout]);
+
+        if (response.status === 200) {
+            const dashboardData = await response.json();
+            renderDashboardData(dashboardData);
+            storeDataInIndexedDB(dashboardData);
+        } else {
             throw new Error('Failed to fetch dashboard data.');
         }
-        const dashboardData = await dashboardResponse.json();
-
-        // Update the state with the combined data from the DashboardController
-        state.accountInfo = dashboardData.latestBalance;
-        state.bills = dashboardData.bills;
-        state.actualTransactions = dashboardData.monthlyIncome;
-        state.expectedIncome = dashboardData.expectedIncome;
-
-        // calculate the bill total
-        const totalDue = state.bills.reduce((sum, bill) => sum + bill.amount, 0);
-        const totalPayed = state.bills.filter(b => b.payed === true).reduce((sum, bill) => sum + bill.amount, 0);
-        const otherSpending = dashboardData.monthlySpendingTotal - totalPayed;
-
-        const { totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
-        const remaining = reconciledTotal - totalDue - otherSpending;
-
-        const now = new Date();
-        const lastUpdatedAccount = new Date(state.accountInfo.updated + "Z");
-        const accountAmountClass = (now.getTime() - lastUpdatedAccount.getTime() > 7200000) ? "color-gray" : "color-ok";
-
-        // Step 4: Populate the dynamic content of the page
-        document.getElementById("balance").innerHTML = `<span class="${accountAmountClass}">$${state.accountInfo.amount.toFixed(2)}</span>`;
-        document.getElementById("updated").innerHTML = `<span class="${accountAmountClass}">${lastUpdatedAccount.toLocaleString()}</span>`;
-        document.getElementById("billtotal").innerHTML = formatDollarAmount(totalDue);
-        document.getElementById("remain").innerHTML = formatDollarAmount(remaining);
-        document.getElementById("expected-income").innerHTML = formatDollarAmount(totalExpected);
-        document.getElementById("actual-income").innerHTML = formatDollarAmount(totalActual);
-        document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
-
-        // Step 5: Render the bills table
-        billsTableBody.innerHTML = state.bills.map(renderBillRow).join('');
-
-        // Step 6: Attach event listeners to the dynamically created elements
-        attachEventListeners();
 
     } catch (error) {
-        console.error("Error rendering bill list:", error);
-        document.getElementById("app-container").innerHTML = `<p>Error loading data. Please try again later.</p>`;
+        console.log('Network request timed out. Loading from IndexedDB.');
+        document.querySelector("#pagetitle").innerHTML += " (Offline)";
+        loadDataFromIndexedDB();
     }
 }
 
+function loadDataFromIndexedDB() {
+    // Attempt to load from IndexedDB first
+    const request = indexedDB.open('BillsDB', 1);
+
+    request.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction('bills', 'readonly');
+        const store = transaction.objectStore('bills');
+        const getRequest = store.get(1); // Retrieve the record with key '1'
+
+        getRequest.onsuccess = () => {
+            if (getRequest.result) {
+                // If data is found, render the chart immediately
+                const data = getRequest.result.content;
+                renderDashboardData(data); // A new function to encapsulate chart rendering logic
+                console.log('Loaded data from IndexedDB.');
+            }
+        };
+    };
+}
+
+function renderDashboardData(dashboardData) {
+    const billsTableBody = document.querySelector("#billsTable tbody");
+    
+    // Update the state with the combined data from the DashboardController
+    state.accountInfo = dashboardData.latestBalance;
+    state.bills = dashboardData.bills;
+    state.actualTransactions = dashboardData.monthlyIncome;
+    state.expectedIncome = dashboardData.expectedIncome;
+
+    // calculate the bill total
+    const totalDue = state.bills.reduce((sum, bill) => sum + bill.amount, 0);
+    const totalPayed = state.bills.filter(b => b.payed === true).reduce((sum, bill) => sum + bill.amount, 0);
+    const otherSpending = dashboardData.monthlySpendingTotal - totalPayed;
+
+    const { totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
+    const remaining = reconciledTotal - totalDue - otherSpending;
+
+    const now = new Date();
+    const lastUpdatedAccount = new Date(state.accountInfo.updated + "Z");
+    const accountAmountClass = (now.getTime() - lastUpdatedAccount.getTime() > 7200000) ? "color-gray" : "color-ok";
+
+    // Step 4: Populate the dynamic content of the page
+    document.getElementById("balance").innerHTML = `<span class="${accountAmountClass}">$${state.accountInfo.amount.toFixed(2)}</span>`;
+    document.getElementById("updated").innerHTML = `<span class="${accountAmountClass}">${lastUpdatedAccount.toLocaleString()}</span>`;
+    document.getElementById("billtotal").innerHTML = formatDollarAmount(totalDue);
+    document.getElementById("remain").innerHTML = formatDollarAmount(remaining);
+    document.getElementById("expected-income").innerHTML = formatDollarAmount(totalExpected);
+    document.getElementById("actual-income").innerHTML = formatDollarAmount(totalActual);
+    document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
+
+    // Step 5: Render the bills table
+    billsTableBody.innerHTML = state.bills.map(renderBillRow).join('');
+
+    // Step 6: Attach event listeners to the dynamically created elements
+    attachEventListeners();
+}
+
 // All other functions (`formatDollarAmount`, `getReconciledIncome`, `calculateExpectedIncome`, `getBillStatus`, `renderBillRow`, `attachEventListeners`, `renderEditForm`, `submitEditForm`, `handleRouting`, and event listeners) remain the same.
+
+function storeDataInIndexedDB(data) {
+    const request = indexedDB.open('BillsDB', 1);
+    
+    request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        // This is the correct place to create the object store
+        db.createObjectStore('bills', { keyPath: 'id' });
+    };
+
+    request.onsuccess = (event) => {
+        const db = event.target.result;
+        const transaction = db.transaction('bills', 'readwrite');
+        const store = transaction.objectStore('bills');
+
+        // Assuming your data has a unique identifier
+        const record = { id: 1, content: data, timestamp: Date.now() };
+        store.put(record);
+
+        transaction.oncomplete = () => {
+            console.log('Data stored successfully in IndexedDB');
+        };
+    };
+
+    request.onerror = (event) => {
+        console.error('IndexedDB error:', event.target.errorCode);
+    };
+}
+
 
 function formatDollarAmount(amount) {
     if (amount >= 0) {
