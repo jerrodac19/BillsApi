@@ -116,17 +116,12 @@
     </script>
     <script>
         let myChart = null;
+        const FETCH_TIMEOUT = 5000; // 5 seconds
+        
         document.addEventListener('DOMContentLoaded', () => {
-            if (!navigator.onLine) {
-                console.log('App is running in standalone mode. Loading from IndexedDB.');
-                // If it's a PWA, immediately try to load from the local database.
-                loadDataFromIndexedDB();
-            } else {
-                console.log('App is running in a browser tab. Attempting network fetch.');
-                // If it's a regular browser tab, proceed with the normal fetch logic.
-                fetchAndRenderData();
-            }
+            fetchAndRenderData();
         });
+        
         function loadDataFromIndexedDB() {
             // Attempt to load from IndexedDB first
             const request = indexedDB.open('FinancialDB', 1);
@@ -150,6 +145,16 @@
         }
         function fetchAndRenderData() {
             // Define the data payload
+            const controller = new AbortController();
+            const signal = controller.signal;
+            
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                console.log('Network request timed out. Loading from IndexedDB.');
+                document.getElementById('info-panel').innerHTML = `<p style="color: yellow;">Network timed out. Displaying cached data.</p>`;
+                loadDataFromIndexedDB();
+            }, FETCH_TIMEOUT);
+            
             const lentMoney = [{
                 amount: 3019,
                 startDate: '2024-11-15T07:00:00Z',
@@ -162,10 +167,14 @@
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(lentMoney)
+                body: JSON.stringify(lentMoney),
+                signal: signal
             };
             fetch('/api/balancemonitors/analytics?weightDecayRate=0.003&confidenceLevel=0.99', options)
-                .then(response => response.json())
+                .then(response => {
+                    clearTimeout(timeoutId); // Clear the timeout if the fetch succeeds
+                    return response.json();
+                 })
                 .then(data => {
                     // Render the chart with new data
                     renderChart(data);
@@ -179,9 +188,10 @@
         }
         function storeDataInIndexedDB(data) {
             const request = indexedDB.open('FinancialDB', 1);
-
+            
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
+                // This is the correct place to create the object store
                 db.createObjectStore('analytics', { keyPath: 'id' });
             };
 
