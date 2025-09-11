@@ -2,18 +2,18 @@
   "name": "The Bills App",
   "short_name": "Bills",
   "description": "A tool for managing and paying bills",
-  "start_url": "/",
+  "start_url": "/BillsApp/index.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "/billsicon-192x192.png",
+      "src": "/BillsApp/billsicon-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/billsicon-512x512.png",
+      "src": "/BillsApp/billsicon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }

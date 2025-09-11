@@ -110,7 +110,7 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/Projections/sw.js');
+          navigator.serviceWorker.register('/Projections/sw.js', { scope: '/Projections/' });
         });
       }
     </script>

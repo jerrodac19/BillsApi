@@ -1,13 +1,12 @@
-const CACHE_NAME = 'bills-cache-v1';
+const CACHE_NAME = 'bills-cache-v3';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/views/bill-list.html',
-  '/views/edit-bill.html',
-  '/style.css',
-  '/app.js',
-  '/billsicon-192x192.png',
-  '/billsicon-512x512.png'
+  '/BillsApp/index.html',
+  '/BillsApp/views/bill-list.html',
+  '/BillsApp/views/edit-bill.html',
+  '/BillsApp/style.css',
+  '/BillsApp/app.js',
+  '/BillsApp/billsicon-192x192.png',
+  '/BillsApp/billsicon-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {

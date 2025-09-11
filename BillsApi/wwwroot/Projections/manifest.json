@@ -2,7 +2,7 @@
   "name": "Financial Projection",
   "short_name": "Projections",
   "description": "A financial projection and analytics tool.",
-  "start_url": "/FinancialProjection.html",
+  "start_url": "/Projections/FinancialProjection.html",
   "display": "standalone",
   "background_color": "#121212",
   "theme_color": "#121212",

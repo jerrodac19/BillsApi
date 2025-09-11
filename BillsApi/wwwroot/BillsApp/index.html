@@ -2,18 +2,18 @@
 <html>
 <head>
     <title>The Bills App</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="/manifest-bills.json">
+    <link rel="stylesheet" href="/BillsApp/style.css">
+    <link rel="manifest" href="/BillsApp/manifest-bills.json">
 </head>
 <body>
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw-bills.js');
+          navigator.serviceWorker.register('/BillsApp/sw-bills.js', { scope: '/BillsApp/' });
         });
       }
     </script>
     <div id="app-container"/>
-    <script src="app.js"></script>
+    <script src="/BillsApp/app.js"></script>
 </body>
 </html>

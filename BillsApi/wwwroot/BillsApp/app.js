@@ -11,7 +11,7 @@ const FETCH_TIMEOUT = 5000; // 5 seconds
 async function renderBillList() {
     try {
         // Step 1: Fetch the HTML for the bill list view
-        const viewResponse = await fetch('/views/bill-list.html');
+        const viewResponse = await fetch('/BillsApp/views/bill-list.html');
         if (!viewResponse.ok) throw new Error('Failed to load bill list view.');
         const viewHtml = await viewResponse.text();
 
@@ -282,7 +282,7 @@ function attachEventListeners() {
     document.querySelectorAll('.edit-bill-button').forEach(button => {
         button.addEventListener('click', (event) => {
             const billId = event.target.dataset.billId;
-            history.pushState({ view: 'edit', id: billId }, '', `/edit/${billId}`);
+            history.pushState({ view: 'edit', id: billId }, '', `/BillsApp/edit/${billId}`);
             renderEditForm(billId);
         });
     });
@@ -291,7 +291,7 @@ function attachEventListeners() {
 async function renderEditForm(billId) {
     try {
         console.log("loading edit form");
-        const viewResponse = await fetch('/views/edit-bill.html');
+        const viewResponse = await fetch('/BillsApp/views/edit-bill.html');
         if (!viewResponse.ok) throw new Error('Failed to load edit bill view.');
         const viewHtml = await viewResponse.text();
 
@@ -351,7 +351,7 @@ async function submitEditForm(id) {
         });
 
         if (response.ok) {
-            history.pushState(null, '', '/');
+            history.pushState(null, '', '/BillsApp/index.html');
             handleRouting();
         } else {
             const errorText = await response.text();
@@ -369,8 +369,8 @@ async function submitEditForm(id) {
 
 function handleRouting() {
     const path = window.location.pathname;
-    if (path.startsWith('/edit/')) {
-        const billId = path.split('/')[2];
+    if (path.startsWith('/BillsApp/edit/')) {
+        const billId = path.split('/')[3];
         renderEditForm(billId);
     } else {
         renderBillList();
