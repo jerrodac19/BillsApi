@@ -3,7 +3,8 @@ const state = {
     bills: [],
     accountInfo: {},
     expectedIncome: [],
-    actualTransactions: []
+    actualTransactions: [],
+    offline: false
 };
 const FETCH_TIMEOUT = 5000; // 5 seconds
 
@@ -22,30 +23,37 @@ async function renderBillList() {
         billsTableBody.innerHTML = `<tr><td colspan="3" class="statusRow">Loading bills...</td></tr>`;
 
         // Step 3: Use Promise.race to handle timeout and network request
-        const controller = new AbortController();
-        const signal = controller.signal;
+        if (state.offline === false) {
+            const controller = new AbortController();
+            const signal = controller.signal;
 
-        const networkFetch = fetch('/api/dashboard', { signal });
-        const timeout = new Promise((_, reject) => {
-            setTimeout(() => {
-                controller.abort();
-                reject(new Error('timeout'));
-            }, FETCH_TIMEOUT);
-        });
+            const networkFetch = fetch('/api/dashboard', { signal });
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => {
+                    controller.abort();
+                    reject(new Error('timeout'));
+                }, FETCH_TIMEOUT);
+            });
 
-        const response = await Promise.race([networkFetch, timeout]);
+            const response = await Promise.race([networkFetch, timeout]);
 
-        if (response.status === 200) {
-            const dashboardData = await response.json();
-            renderDashboardData(dashboardData);
-            storeDataInIndexedDB(dashboardData);
-        } else {
-            throw new Error('Failed to fetch dashboard data.');
+            if (response.status === 200) {
+                const dashboardData = await response.json();
+                renderDashboardData(dashboardData);
+                storeDataInIndexedDB(dashboardData);
+            } else {
+                throw new Error('Failed to fetch dashboard data.');
+            }
+        }
+        else {
+            //throw this error to skip timeout for faster future loads
+            //once the website is offline it will offline until they completely reload
+            throw new Error('Website is offline')
         }
 
     } catch (error) {
         console.log('Network request timed out. Loading from IndexedDB.');
-        document.querySelector("#pagetitle").innerHTML += " (Offline)";
+        state.offline = true;
         loadDataFromIndexedDB();
     }
 }
@@ -100,6 +108,10 @@ function renderDashboardData(dashboardData) {
     document.getElementById("expected-income").innerHTML = formatDollarAmount(totalExpected);
     document.getElementById("actual-income").innerHTML = formatDollarAmount(totalActual);
     document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
+
+    if (state.offline === true) {
+        document.getElementById("pagetitle").innerHTML += " (Offline)";
+    }
 
     // Step 5: Render the bills table
     billsTableBody.innerHTML = state.bills.map(renderBillRow).join('');
