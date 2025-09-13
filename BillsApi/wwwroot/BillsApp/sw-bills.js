@@ -1,4 +1,5 @@
-const CACHE_NAME = 'bills-cache-v3';
+const CACHE_NAME = 'bills-cache-v4';
+
 const urlsToCache = [
   '/BillsApp/index.html',
   '/BillsApp/views/bill-list.html',
@@ -10,8 +11,26 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', (event) => {
+  console.log('Service worker is installing...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service worker is activating...');
+  event.waitUntil(
+    // Delete old caches to free up space
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter((cacheName) => cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      // Takes control of the page immediately, bypassing the waiting state
+      self.clients.claim();
+      return self.skipWaiting();
+    })
   );
 });
 
@@ -20,5 +39,3 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
-
-

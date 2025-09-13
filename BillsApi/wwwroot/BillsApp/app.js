@@ -297,9 +297,16 @@ async function renderEditForm(billId) {
 
         document.getElementById('app-container').innerHTML = viewHtml;
 
-        const billResponse = await fetch(`/api/bills/${billId}`);
-        if (!billResponse.ok) throw new Error('Failed to fetch bill data.');
-        const bill = await billResponse.json();
+        let bill = null;
+        if (state.bills.length === 0) {
+            console.log(`fetching bill id: ${billId}`);
+            const billResponse = await fetch(`/api/bills/${billId}`);
+            if (!billResponse.ok) throw new Error('Failed to fetch bill data.');
+            bill = await billResponse.json();
+        }
+        else {
+            bill = state.bills.find(b => b.id == billId);
+        }
 
         document.getElementById('edit-form-title').innerHTML = `Update <span class='title-orange'>${bill.title}</span> Bill`;
         document.getElementById('amount').value = bill.amount.toFixed(2);

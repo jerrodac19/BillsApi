@@ -151,7 +151,6 @@
             const timeoutId = setTimeout(() => {
                 controller.abort();
                 console.log('Network request timed out. Loading from IndexedDB.');
-                document.getElementById('info-panel').innerHTML = `<p style="color: yellow;">Network timed out. Displaying cached data.</p>`;
                 loadDataFromIndexedDB();
             }, FETCH_TIMEOUT);
             
@@ -170,7 +169,7 @@
                 body: JSON.stringify(lentMoney),
                 signal: signal
             };
-            fetch('/api/balancemonitors/analytics?weightDecayRate=0.003&confidenceLevel=0.99', options)
+            fetch('/api/balancemonitors/analytics?weightDecayRate=0&confidenceLevel=0.99', options)
                 .then(response => {
                     clearTimeout(timeoutId); // Clear the timeout if the fetch succeeds
                     return response.json();
@@ -183,7 +182,6 @@
                 })
                 .catch(error => {
                     console.error('There was a problem with the fetch operation:', error);
-                    document.getElementById('info-panel').innerHTML = `<p style="color: red;">Could not load chart data. Check the server console.</p>`;
                 });
         }
         function storeDataInIndexedDB(data) {
