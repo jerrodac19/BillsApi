@@ -235,6 +235,7 @@
             const trendlineChartData = formatDataForChart(data.trendline);
             const lowerPIChartData = formatDataForChart(data.lowerPredictionInterval);
             const upperPIChartData = formatDataForChart(data.upperPredictionInterval);
+            const averageDailySpending = (data.trendline[0][1] - data.trendline[1][1]) / (data.trendline[1][0] - data.trendline[0][0]);
 
             const pointColors = data.historicalWeights.map(weight => {
                 const minOpacity = 0.0;
@@ -278,6 +279,11 @@
             trendlineinformation.push(`Money estimated to last until:`);
             trendlineinformation.push(`Earliest Date: ${earliestDateDisplay}`);
             trendlineinformation.push(`Latest Date: ${latestDateDisplay}`);
+            trendlineinformation.push('&nbsp;');
+            trendlineinformation.push(`Standard Error: $${data.ser.toFixed(2)}`);
+            trendlineinformation.push(`RSquared: ${data.rSquared.toFixed(2)}`);
+            trendlineinformation.push(`Average Daily Spending: $${averageDailySpending.toFixed(2)}`);
+            trendlineinformation.push(`Prediction Confidence: %${(data.confidence * 100).toFixed(0)}`);
             const infoPanel = document.getElementById('info-panel');
             infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
 

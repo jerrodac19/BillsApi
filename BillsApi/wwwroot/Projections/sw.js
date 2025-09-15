@@ -1,4 +1,5 @@
 const CACHE_NAME = 'financial-projection-cache-v3';
+//v3
 const urlsToCache = [
   '/Projections/FinancialProjection.html',
   'https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js',
