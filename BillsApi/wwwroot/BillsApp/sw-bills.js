@@ -13,7 +13,23 @@ const urlsToCache = [
 self.addEventListener('install', (event) => {
   console.log('Service worker is installing...');
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        return Promise.all(
+          urlsToCache.map((url) => {
+            return cache.add(url).catch((error) => {
+              console.error(`Failed to cache ${url}:`, error);
+              return Promise.resolve(); // This ensures the all-or-nothing promise doesn't fail
+            });
+          })
+        );
+      })
+      .then(() => {
+        console.log('All files successfully cached.');
+      })
+      .catch((error) => {
+        console.error('Service worker installation failed:', error);
+      })
   );
 });
 
