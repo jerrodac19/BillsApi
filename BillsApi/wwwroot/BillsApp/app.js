@@ -110,7 +110,7 @@ function renderDashboardData(dashboardData) {
     document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
 
     if (state.offline === true) {
-        document.getElementById("pagetitle").innerHTML += " (Offline)";
+        document.getElementById("pagetitle").innerHTML += "<span class='color-orange'> (Offline)</span>";
     }
 
     // Step 5: Render the bills table

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bills-cache-v10';
+const CACHE_NAME = 'bills-cache-v11';
 
 const urlsToCache = [
   '/BillsApp/index.html',

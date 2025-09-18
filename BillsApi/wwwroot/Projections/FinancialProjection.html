@@ -282,7 +282,7 @@
             trendlineinformation.push('&nbsp;');
             trendlineinformation.push(`Standard Error: $${data.ser.toFixed(2)}`);
             trendlineinformation.push(`RSquared: ${data.rSquared.toFixed(2)}`);
-            trendlineinformation.push(`Average Daily Spending: $${averageDailySpending.toFixed(2)}`);
+            trendlineinformation.push(`Average Daily Money Loss: $${averageDailySpending.toFixed(2)}`);
             trendlineinformation.push(`Prediction Confidence: %${(data.confidence * 100).toFixed(0)}`);
             const infoPanel = document.getElementById('info-panel');
             infoPanel.innerHTML = trendlineinformation.map(line => `<p>${line}</p>`).join('');
