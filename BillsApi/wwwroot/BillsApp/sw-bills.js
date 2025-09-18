@@ -1,4 +1,5 @@
-const CACHE_NAME = 'bills-cache-v11';
+const CACHE_PREFIX = 'bills-cache';
+const CACHE_NAME = `${CACHE_PREFIX}-v12`;
 
 const urlsToCache = [
   '/BillsApp/index.html',
@@ -26,6 +27,8 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('All files successfully cached.');
+        // Force the new service worker to activate immediately after installation
+        self.skipWaiting();
       })
       .catch((error) => {
         console.error('Service worker installation failed:', error);
@@ -39,13 +42,12 @@ self.addEventListener('activate', (event) => {
     // Delete old caches to free up space
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.filter((cacheName) => cacheName !== CACHE_NAME)
+        cacheNames.filter((cacheName) => cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME)
           .map((cacheName) => caches.delete(cacheName))
       );
     }).then(() => {
       // Takes control of the page immediately, bypassing the waiting state
-      self.clients.claim();
-      return self.skipWaiting();
+      return self.clients.claim();
     })
   );
 });

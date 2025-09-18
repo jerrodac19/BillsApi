@@ -1,5 +1,6 @@
-const CACHE_NAME = 'financial-projection-cache-v3';
-//cache name v3
+const CACHE_PREFIX = 'financial-projection-cache';
+const CACHE_NAME = `${CACHE_PREFIX}-v4`;
+
 const urlsToCache = [
   '/Projections/FinancialProjection.html',
   'https://cdn.jsdelivr.net/npm/luxon/build/global/luxon.min.js',
@@ -27,10 +28,28 @@ self.addEventListener('install', (event) => {
       })
       .then(() => {
         console.log('All files successfully cached.');
+        // Force the new service worker to activate immediately after installation
+        self.skipWaiting();
       })
       .catch((error) => {
         console.error('Service worker installation failed:', error);
       })
+  );
+});
+
+self.addEventListener('activate', (event) => {
+  console.log('Service worker is activating...');
+  event.waitUntil(
+    // Delete old caches to free up space
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.filter((cacheName) => cacheName.startsWith(CACHE_PREFIX) && cacheName !== CACHE_NAME)
+          .map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      // Takes control of the page immediately, bypassing the waiting state
+      return self.clients.claim();
+    })
   );
 });
 
