@@ -4,6 +4,7 @@ using BillsApi.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BillsApi.Migrations
 {
     [DbContext(typeof(BillsApiContext))]
-    partial class BillsApiContextModelSnapshot : ModelSnapshot
+    [Migration("20250921211033_MakeColumnNotNullable")]
+    partial class MakeColumnNotNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -229,6 +232,7 @@ namespace BillsApi.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("SearchString")
+                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 

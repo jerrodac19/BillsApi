@@ -122,6 +122,7 @@ public partial class BillsApiContext : DbContext
 
             entity.ToTable("Income");
 
+            entity.Property(e => e.SearchString).HasMaxLength(50);
             entity.Property(e => e.Amount).HasColumnType("money");
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
