@@ -17,6 +17,8 @@ public partial class Transaction
 
     public DateTime? Date { get; set; }
 
+    public DateTime? CreationTime { get; set; }
+
     public string? AccountName { get; set; }
 
     public string? Status { get; set; }

@@ -56,7 +56,8 @@ namespace BillsApi.Controllers
                 Description = createTransactionDto.Description,
                 Status = createTransactionDto.Status,
                 AccountName = createTransactionDto.AccountName,
-                GroupId = createTransactionDto.GroupId
+                GroupId = createTransactionDto.GroupId,
+                CreationTime = DateTime.UtcNow
             };
 
             await _unitOfWork.Transactions.AddAsync(transaction);
