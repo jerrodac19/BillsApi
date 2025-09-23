@@ -28,7 +28,7 @@
             DateTime today = DateTime.Today;
             DateTime firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
 
-            query = query.Where(t => t.Deposit > 0 && t.Date != null && t.Date >= firstDayOfMonth);
+            query = query.Where(t => t.Deposit > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
             if (!string.IsNullOrEmpty(accountName))
             {
@@ -43,7 +43,7 @@
             DateTime today = DateTime.Today;
             DateTime firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
 
-            query = query.Where(t => t.Withdrawal > 0 && t.Date != null && t.Date >= firstDayOfMonth);
+            query = query.Where(t => t.Withdrawal > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
             if (!string.IsNullOrEmpty(accountName))
             {
