@@ -166,7 +166,7 @@ function getReconciledIncome() {
 
     const expectedPayments = calculateExpectedIncome(state.expectedIncome);
 
-    const totalExpected = expectedPayments.reduce((sum, income) => sum + income.amount, 0);
+    let totalExpected = expectedPayments.reduce((sum, income) => sum + income.amount, 0);
 
     for (const expectedPayment of expectedPayments) {
         let isMatched = false;
@@ -176,9 +176,9 @@ function getReconciledIncome() {
 
             const dateDifference = Math.abs(new Date(expectedPayment.date) - new Date(actual.date)) / (1000 * 60 * 60 * 24);
             const amountDifference = Math.abs(expectedPayment.amount - actual.deposit);
-
-            if (dateDifference <= 3 && amountDifference <= 50) {
+            if (dateDifference <= 3 && amountDifference <= 200 && actual.description.toLowerCase().includes(expectedPayment.searchString.toLowerCase()) ) {
                 reconciledTotal += actual.deposit;
+                totalExpected -= expectedPayment.amount;
                 matchedTransactionIds.add(actual.id);
                 isMatched = true;
                 break;
@@ -228,7 +228,7 @@ function calculateExpectedIncome(incomes) {
             nextPaymentDate.setDate(startDate.getDate() + nextOccurenceDays);
 
             while (nextPaymentDate <= endOfMonth) {
-                expectedObject = { amount: income.amount, date: new Date(nextPaymentDate) };
+                expectedObject = { amount: income.amount, date: new Date(nextPaymentDate), searchString: income.searchString };
                 expectedPayments.push(expectedObject);
                 nextPaymentDate.setDate(nextPaymentDate.getDate() + frequency);
             }
