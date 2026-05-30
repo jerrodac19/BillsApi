@@ -176,7 +176,7 @@ function getReconciledIncome() {
 
             const dateDifference = Math.abs(new Date(expectedPayment.date) - new Date(actual.date)) / (1000 * 60 * 60 * 24);
             const amountDifference = Math.abs(expectedPayment.amount - actual.deposit);
-            if (dateDifference <= 3 && amountDifference <= 200 && actual.description.toLowerCase().includes(expectedPayment.searchString.toLowerCase()) ) {
+            if (dateDifference <= 3 && amountDifference <= 500 && actual.description.toLowerCase().includes(expectedPayment.searchString.toLowerCase()) ) {
                 reconciledTotal += actual.deposit;
                 totalExpected -= expectedPayment.amount;
                 matchedTransactionIds.add(actual.id);
