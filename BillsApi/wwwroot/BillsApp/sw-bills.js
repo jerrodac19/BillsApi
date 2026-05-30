@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'bills-cache';
-const CACHE_NAME = `${CACHE_PREFIX}-v20`;
+const CACHE_NAME = `${CACHE_PREFIX}-v21`;
 
 const urlsToCache = [
   '/BillsApp/index.html',

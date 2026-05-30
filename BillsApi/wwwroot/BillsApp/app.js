@@ -93,7 +93,7 @@ function renderDashboardData(dashboardData) {
     const totalPayed = state.bills.filter(b => b.payed === true).reduce((sum, bill) => sum + bill.amount, 0);
     const otherSpending = dashboardData.monthlySpendingTotal - totalPayed;
 
-    const { totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
+    const { otherIncome, totalActual, totalExpected, reconciledTotal } = getReconciledIncome();
     const remaining = reconciledTotal - totalDue - otherSpending;
 
     const now = new Date();
@@ -107,6 +107,7 @@ function renderDashboardData(dashboardData) {
     document.getElementById("remain").innerHTML = formatDollarAmount(remaining);
     document.getElementById("expected-income").innerHTML = formatDollarAmount(totalExpected);
     document.getElementById("actual-income").innerHTML = formatDollarAmount(totalActual);
+    document.getElementById("other-income").innerHTML = formatDollarAmount(otherIncome);
     document.getElementById("otherspending").innerHTML = formatDollarAmount(otherSpending);
 
     if (state.offline === true) {
@@ -196,9 +197,15 @@ function getReconciledIncome() {
         }
     }
 
-    const totalActual = state.actualTransactions.reduce((sum, transaction) => sum + transaction.deposit, 0);
+    const { otherIncome, totalActual } = state.actualTransactions.reduce((sum, transaction) => {
+        if (transaction.description.toLowerCase().includes(state.expectedIncome[0].searchString.toLowerCase())) {
+            return { otherIncome: sum.otherIncome, totalActual: sum.totalActual + transaction.deposit };
+        } else {
+            return { otherIncome: sum.otherIncome + transaction.deposit, totalActual: sum.totalActual };
+        }
+    }, { otherIncome: 0, totalActual: 0 });
 
-    return { totalActual, totalExpected, reconciledTotal };
+    return { otherIncome, totalActual, totalExpected, reconciledTotal };
 }
 
 function calculateExpectedIncome(incomes) {

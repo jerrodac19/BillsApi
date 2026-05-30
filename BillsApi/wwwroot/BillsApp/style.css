@@ -27,7 +27,7 @@ h1 {
 }
 
 h2 {
-    font-size: 1.1em;
+    font-size: 0.96em;
     margin-top: 0.1em;
     margin-bottom: 0.1em;
     color: var(--secondary-text-color);
@@ -202,7 +202,7 @@ span.status {
     color: var(--status-orange-color);
 }
 
-#remain, #daily, #actual-income, #expected-income {
+#remain, #daily, #actual-income, #expected-income, #other-income {
     color: var(--status-blue-color);
 }
 
@@ -228,7 +228,7 @@ span.status {
     }
 
     h2 {
-        font-size: 2.5em;
+        font-size: 2.18em;
         margin-top: 0.3em;
         margin-bottom: 0.3em;
     }
