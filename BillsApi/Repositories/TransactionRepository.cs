@@ -25,8 +25,8 @@
         public async Task<IEnumerable<Transaction>> GetMonthlyIncomeAsync(string? accountName)
         {
             var query = _context.Transactions.AsQueryable();
-            DateTime today = DateTime.Today;
-            DateTime firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
             query = query.Where(t => t.Deposit > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
@@ -40,8 +40,8 @@
         public async Task<decimal> GetMonthlySpendingTotalAsync(string? accountName)
         {
             var query = _context.Transactions.AsQueryable();
-            DateTime today = DateTime.Today;
-            DateTime firstDayOfMonth = new DateTime(today.Year, today.Month, 1);
+            DateTime utcNow = DateTime.UtcNow;
+            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
             query = query.Where(t => t.Withdrawal > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
