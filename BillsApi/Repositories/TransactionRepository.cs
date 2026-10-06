@@ -26,7 +26,7 @@
         {
             var query = _context.Transactions.AsQueryable();
             DateTime utcNow = DateTime.UtcNow;
-            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 7, 0, 0, DateTimeKind.Utc);
 
             query = query.Where(t => t.Deposit > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
@@ -41,7 +41,7 @@
         {
             var query = _context.Transactions.AsQueryable();
             DateTime utcNow = DateTime.UtcNow;
-            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+            DateTime firstDayOfMonth = new DateTime(utcNow.Year, utcNow.Month, 1, 7, 0, 0, DateTimeKind.Utc);
 
             query = query.Where(t => t.Withdrawal > 0 && t.CreationTime != null && t.CreationTime >= firstDayOfMonth);
 
