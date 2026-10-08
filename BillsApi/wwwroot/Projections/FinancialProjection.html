@@ -124,7 +124,7 @@
 
         @media (max-width: 768px) {
             html, body {
-                height: auto;
+                height: 100%;
             }
 
             .top-layout {
@@ -156,7 +156,8 @@
 
             .chart-section {
                 width: 95vw;
-                height: 400px;
+                flex: 1;
+                min-height: 300px;
             }
 
             .chart-container {
@@ -166,10 +167,6 @@
         }
 
         @media (max-width: 480px) {
-            .chart-section {
-                height: 320px;
-            }
-
             .chart-container {
                 --point-size: 0.7;
                 padding: 10px;
