@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'financial-projection-cache';
-const CACHE_NAME = `${CACHE_PREFIX}-v18`;
+const CACHE_NAME = `${CACHE_PREFIX}-v20`;
 
 const urlsToCache = [
   '/Projections/FinancialProjection.html',
