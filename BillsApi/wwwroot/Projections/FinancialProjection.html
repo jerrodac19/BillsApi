@@ -23,22 +23,32 @@
             background-color: #121212;
             color: #e0e0e0;
             font-family: Arial, sans-serif;
+            overflow: hidden;
         }
 
         body {
             display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
+            justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: 20px 15px;
+        }
+
+        /* Common wrapper that shrink-wraps to match the chart's dynamic width */
+        .app-wrapper {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            width: fit-content;
+            max-width: 100%;
             gap: 15px;
         }
 
         .top-layout {
             display: flex;
             flex-direction: row;
-            width: 90vw;
-            gap: 15px;
+            width: 100%;
+            gap: 12px;
             align-items: stretch;
             flex-shrink: 0;
         }
@@ -46,7 +56,7 @@
         .controls-panel {
             background-color: #1e1e1e;
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
@@ -67,30 +77,31 @@
             writing-mode: bt-lr;
             appearance: slider-vertical;
             width: 8px;
-            height: 100px;
-            margin: 15px 0;
+            height: 90px;
+            margin: 10px 0;
             accent-color: #4bc0c0;
             cursor: pointer;
         }
 
         .slider-label {
-            font-size: 0.9em;
+            font-size: 0.85em;
             text-align: center;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             color: #b0b0b0;
         }
 
         .slider-value {
             font-weight: bold;
             color: #4bc0c0;
-            margin-top: 5px;
+            margin-top: 3px;
+            font-size: 0.95em;
         }
 
         .info-panel {
             flex: 1;
             background-color: #1e1e1e;
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             text-align: center;
             display: flex;
@@ -98,45 +109,58 @@
             justify-content: center;
         }
 
-            .info-panel p {
-                margin: 3px 0;
-                font-size: 1.05em;
-            }
+        .info-panel p {
+            margin: 2px 0;
+            font-size: 0.95em;
+        }
 
         .chart-section {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Centers the shrink-to-fit container horizontally */
+            align-items: center;
+            width: 100%;
             flex: 1;
             min-height: 250px;
+            justify-content: center;
         }
 
         .chart-container {
             --point-size: 4;
             position: relative;
-            width: auto;  /* Let the width adjust dynamically based on the height and aspect ratio */
-            height: 100%;
-            aspect-ratio: 1; /* Matches your Chart.js aspect ratio to keep bounds locked */
+            width: 100%;
+            height: 73vh;
+            aspect-ratio: 1;
             background-color: #1e1e1e;
             border-radius: 8px;
-            padding: 15px;
+            padding: 12px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         @media (max-width: 768px) {
             html, body {
-                height: 100%;
+                overflow: auto;
+                padding: 15px 10px;
+            }
+
+            body {
+                justify-content: flex-start;
+            }
+
+            .app-wrapper {
+                width: 95vw;
+                height: auto;
             }
 
             .top-layout {
-                flex-direction: column;
-                width: 95vw;
+                flex-direction: column; /* Stack controls and info panel vertically on mobile */
             }
-
             .controls-panel {
                 flex-direction: row;
                 width: 100%;
-                padding: 12px;
+                padding: 14px 10px;
                 justify-content: space-around;
             }
 
@@ -155,65 +179,57 @@
                 margin: 0;
             }
 
-            .chart-section {
-                width: 95vw;
-                flex-direction: row;
-                flex: 1;
-                min-height: 300px;
-            }
-
             .chart-container {
                 --point-size: 1.0;
-                padding: 12px;
                 width: 100%;
                 height: auto;
+                aspect-ratio: auto;
+                flex: 1;
+                min-height: 280px;
             }
         }
 
         @media (max-width: 480px) {
             .chart-container {
                 --point-size: 0.7;
-                padding: 10px;
-            }
-
-            .info-panel p {
-                font-size: 0.95em;
             }
         }
     </style>
 </head>
 <body>
-    <div class="top-layout">
-        <div class="controls-panel">
-            <div class="slider-wrapper">
-                <span class="slider-label">Alpha (&alpha;)</span>
-                <input type="range" id="alphaSlider" class="vertical-slider" min="0" max="0.005" step="0.001" value="0">
-                <span id="alphaValue" class="slider-value">0.000</span>
+    <div class="app-wrapper">
+        <div class="top-layout">
+            <div class="controls-panel">
+                <div class="slider-wrapper">
+                    <span class="slider-label">Alpha (&alpha;)</span>
+	                <input type="range" id="alphaSlider" class="vertical-slider" min="0" max="0.005" step="0.001" value="0">
+	                <span id="alphaValue" class="slider-value">0.000</span>
+                </div>
+            </div>
+            <div id="info-panel" class="info-panel">
+                <p>Loading financial data and projections...</p>
             </div>
         </div>
-        <div id="info-panel" class="info-panel">
-            <p>Loading financial data and projections...</p>
-        </div>
-    </div>
-
-    <div class="chart-section">
-        <div class="chart-container">
-            <canvas id="myFinancialChart"></canvas>
+        
+        <div class="chart-section">
+            <div class="chart-container">
+                <canvas id="myFinancialChart"></canvas>
+            </div>
         </div>
     </div>
 
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Projections/sw.js', { scope: '/Projections/' });
-            });
-        }
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/Projections/sw.js', { scope: '/Projections/' });
+        });
+      }
     </script>
     <script>
         let myChart = null;
         let fetchTimeoutId = null;
         const FETCH_TIMEOUT = 5000;
-
+        
         document.addEventListener('DOMContentLoaded', () => {
             const alphaSlider = document.getElementById('alphaSlider');
             const alphaValueDisplay = document.getElementById('alphaValue');
@@ -230,7 +246,7 @@
                 }, 250);
             });
         });
-
+        
         function loadDataFromIndexedDB() {
             const request = indexedDB.open('FinancialDB', 1);
 
@@ -254,13 +270,13 @@
         function fetchAndRenderData(weightDecayRate = 0) {
             const controller = new AbortController();
             const signal = controller.signal;
-
+            
             const timeoutId = setTimeout(() => {
                 controller.abort();
                 console.log('Network request timed out. Loading from IndexedDB.');
                 loadDataFromIndexedDB();
             }, FETCH_TIMEOUT);
-
+            
             const lentMoney = [{
                 amount: 3019,
                 startDate: '2024-11-15T07:00:00Z',
@@ -277,10 +293,10 @@
             };
 
             fetch(`/api/balancemonitors/analytics?weightDecayRate=${weightDecayRate}&confidenceLevel=0.99`, options)
-                    .then(response => {
-                clearTimeout(timeoutId);
-                return response.json();
-            })
+                .then(response => {
+                    clearTimeout(timeoutId);
+                    return response.json();
+                 })
                 .then(data => {
                     renderChart(data);
                     storeDataInIndexedDB(data);
@@ -294,7 +310,7 @@
 
         function storeDataInIndexedDB(data) {
             const request = indexedDB.open('FinancialDB', 1);
-
+            
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
                 db.createObjectStore('analytics', { keyPath: 'id' });
@@ -433,8 +449,9 @@
                     ]
                 },
                 options: {
+                    responsive: true,
                     maintainAspectRatio: true,
-                    aspectRatio: 1, // Width / Height (e.g., 2 means twice as wide as it is tall; use 1 for a square)
+                    aspectRatio: 1,
                     scales: {
                         x: {
                             type: 'time',
