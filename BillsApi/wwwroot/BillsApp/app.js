@@ -153,8 +153,8 @@ function storeDataInIndexedDB(data) {
 
 
 function formatDollarAmount(amount) {
-    if (amount >= 0) {
-        return `$${amount.toFixed(2)}`;
+    if (amount > -0.01) {
+        return `$${Math.abs(amount).toFixed(2)}`;
     }
     else {
         return `<span class="color-red">-$${(amount * -1).toFixed(2)}</span>`;
