@@ -215,7 +215,7 @@ function calculateExpectedIncome(incomes) {
     let expectedPayments = [];
 
     for (const income of incomes) {
-        const startDate = new Date(income.startDate);
+        const startDate = new Date(income.startDate + 'T00:00:00');
         const frequency = income.frequency;
 
         if (frequency === 0) {
